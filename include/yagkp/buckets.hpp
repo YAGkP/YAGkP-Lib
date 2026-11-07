@@ -206,7 +206,7 @@ namespace yagkp {
 			return {gain_value[id], id};
 		}
 
-		bool empty() const {
+		bool empty() const noexcept {
 			return n_nodes == 0;
 		}
 

@@ -56,7 +56,6 @@ namespace yagkp {
 		}
 
 		Graph();
-		Graph(const spMtx<double>& matrix, bool ignore_eweights = false);
 		Graph(
 		    const std::string& file_name,
 		    const std::string& format,

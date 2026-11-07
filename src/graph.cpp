@@ -7,10 +7,6 @@ namespace yagkp {
 	Graph::Graph() {
 	}
 
-	Graph::Graph(const spMtx<double>& matrix, bool ignore_eweights) {
-		buildGraph(matrix, ignore_eweights);
-	}
-
 	Graph::Graph(const std::string& file_name, const std::string& format, bool ignore_eweights) {
 		spMtx<double> matrix(file_name.c_str(), format);
 		buildGraph(matrix, ignore_eweights);
