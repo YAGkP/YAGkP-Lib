@@ -15,7 +15,8 @@ usage() {
 parse_common_args "$@"
 deps_begin scotch external/scotch
 
-#   INTSIZE=32                SCOTCH_Num = int: обёртка передаёт int* напрямую
+#   INTSIZE=64                SCOTCH_Num = int64: суммы весов рёбер больших
+#                             графов не помещаются в 32 бита
 #   BUILD_PTSCOTCH=OFF        без MPI
 #   BUILD_FORTRAN=OFF         Fortran-интерфейс не нужен, а компилятора может не быть
 #   BUILD_LIBSCOTCHMETIS=OFF  иначе SCOTCH положит свой metis.h и он
@@ -24,7 +25,7 @@ deps_begin scotch external/scotch
 #   USE_ZLIB/LZMA/BZ2=OFF     иначе libscotch потребует -lz -llzma -lbz2 при линковке
 deps_configure \
 	-DBUILD_SHARED_LIBS=OFF \
-	-DINTSIZE=32 \
+	-DINTSIZE=64 \
 	-DBUILD_PTSCOTCH=OFF \
 	-DBUILD_FORTRAN=OFF \
 	-DBUILD_LIBESMUMPS=OFF \

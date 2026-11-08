@@ -37,70 +37,16 @@ namespace yagkp::benchmark {
 			if (name == "yagkp") {
 				partition = Partitioner::GetGraphKPartition(g, k);
 			}
-			else if (name == "kahip_fast") {
-				auto v = RunKaHIP(
-				    g.n,
-				    k,
-				    std::vector<int>(g.xadj.begin(), g.xadj.end()),
-				    std::vector<int>(g.adjncy.begin(), g.adjncy.end()),
-				    std::vector<int>(g.vertex_weights.begin(), g.vertex_weights.end()),
-				    "fast"
-				);
-				partition.assign(v.begin(), v.end());
+			else if (name == "kahip_fast" || name == "kahip_eco" || name == "kahip_strong") {
+				partition =
+				    RunKaHIP(k, g.xadj, g.adjncy, g.vertex_weights, g.edge_weights, name.substr(6));
 			}
-			else if (name == "kahip_eco") {
-				auto v = RunKaHIP(
-				    g.n,
-				    k,
-				    std::vector<int>(g.xadj.begin(), g.xadj.end()),
-				    std::vector<int>(g.adjncy.begin(), g.adjncy.end()),
-				    std::vector<int>(g.vertex_weights.begin(), g.vertex_weights.end()),
-				    "eco"
-				);
-				partition.assign(v.begin(), v.end());
-			}
-			else if (name == "kahip_strong") {
-				auto v = RunKaHIP(
-				    g.n,
-				    k,
-				    std::vector<int>(g.xadj.begin(), g.xadj.end()),
-				    std::vector<int>(g.adjncy.begin(), g.adjncy.end()),
-				    std::vector<int>(g.vertex_weights.begin(), g.vertex_weights.end()),
-				    "strong"
-				);
-				partition.assign(v.begin(), v.end());
-			}
-			else if (name == "metis_kway") {
-				auto v = RunMETIS(
-				    g.n,
-				    k,
-				    std::vector<int>(g.xadj.begin(), g.xadj.end()),
-				    std::vector<int>(g.adjncy.begin(), g.adjncy.end()),
-				    std::vector<int>(g.vertex_weights.begin(), g.vertex_weights.end()),
-				    "kway"
-				);
-				partition.assign(v.begin(), v.end());
-			}
-			else if (name == "metis_recursive") {
-				auto v = RunMETIS(
-				    g.n,
-				    k,
-				    std::vector<int>(g.xadj.begin(), g.xadj.end()),
-				    std::vector<int>(g.adjncy.begin(), g.adjncy.end()),
-				    std::vector<int>(g.vertex_weights.begin(), g.vertex_weights.end()),
-				    "recursive"
-				);
-				partition.assign(v.begin(), v.end());
+			else if (name == "metis_kway" || name == "metis_recursive") {
+				partition =
+				    RunMETIS(k, g.xadj, g.adjncy, g.vertex_weights, g.edge_weights, name.substr(6));
 			}
 			else if (name == "scotch") {
-				auto v = RunSCOTCH(
-				    g.n,
-				    k,
-				    std::vector<int>(g.xadj.begin(), g.xadj.end()),
-				    std::vector<int>(g.adjncy.begin(), g.adjncy.end()),
-				    std::vector<int>(g.vertex_weights.begin(), g.vertex_weights.end())
-				);
-				partition.assign(v.begin(), v.end());
+				partition = RunSCOTCH(k, g.xadj, g.adjncy, g.vertex_weights, g.edge_weights);
 			}
 			else {
 				throw std::runtime_error("Unknown algo: " + name);

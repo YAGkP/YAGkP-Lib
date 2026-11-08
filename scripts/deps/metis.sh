@@ -21,7 +21,7 @@ deps_begin metis external/METIS gklib
 xinclude="$DEP_SRC/build/xinclude"
 mkdir -p "$xinclude"
 {
-	echo "#define IDXTYPEWIDTH 32"
+	echo "#define IDXTYPEWIDTH 64" # суммы весов рёбер больших графов не помещаются в 32 бита
 	echo "#define REALTYPEWIDTH 32"
 	cat "$DEP_SRC/include/metis.h"
 } >"$xinclude/metis.h"

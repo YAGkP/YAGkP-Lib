@@ -22,12 +22,17 @@ deps_begin kahip external/KaHIP
 #                             иначе KaHIP подключит OpenMP, если найдёт: для
 #                             последовательного варианта он не нужен
 #   LIB_METIS=OFF             иначе KaHIP подключит METIS, если найдёт его в системе
+#   64BITMODE=ON              64-битные веса рёбер и индексы (MODE64BITEDGES,
+#                             KAHIP_64BIT): суммы весов больших графов не
+#                             помещаются в 32 бита. KAHIP_64BIT нужен и при
+#                             компиляции yagkp_bench: от него зависит kahip_idx
 deps_configure \
 	-DNONATIVEOPTIMIZATIONS=ON \
 	-DNOMPI=ON \
 	-DPARHIP=OFF \
 	-DCMAKE_DISABLE_FIND_PACKAGE_OpenMP=ON \
-	-DLIB_METIS=OFF
+	-DLIB_METIS=OFF \
+	-D64BITMODE=ON
 # Только библиотека: утилиты KaHIP не нужны, а собираются долго
 cmake --build "$DEP_BUILD" --target kahip_static --parallel "$JOBS"
 

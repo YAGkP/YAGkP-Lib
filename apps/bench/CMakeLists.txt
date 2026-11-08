@@ -33,6 +33,10 @@ yagkp_import_dep(dep_scotch    scotch libscotch.a)
 yagkp_import_dep(dep_scotcherr scotch libscotcherr.a)
 yagkp_import_dep(dep_kahip     kahip  libkahip_static.a)
 
+# KaHIP собран в 64-битном режиме (scripts/deps/kahip.sh): kahip_idx в
+# kaHIP_interface.h должен быть int64_t и в нашем коде
+set_property(TARGET dep_kahip PROPERTY INTERFACE_COMPILE_DEFINITIONS KAHIP_64BIT)
+
 # Зависимости между ними: METIS использует GKlib, GKlib — libm
 target_link_libraries(dep_metis  INTERFACE dep_gklib)
 target_link_libraries(dep_gklib  INTERFACE m)
