@@ -125,11 +125,14 @@ namespace yagkp::Bipartitioner {
 					}
 				};
 
+				int_t next_unchecked = 0; 
+
 				bool progressed = true;
 				while (progressed) {
 					progressed = false;
 
-					for (int_t V: order) {
+					for (;next_unchecked < n; next_unchecked++) {
+						int_t V = order[next_unchecked];
 						if (blocked[V])
 							continue;
 						if (current_weight + graph.getVertexWeight(V) > C1)
