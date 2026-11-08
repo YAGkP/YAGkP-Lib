@@ -6,3 +6,4 @@ gmon.out
 compile_commands.json
 /benchmark/results/
 /benchmark/analysis/__pycache__
+/.vscode/

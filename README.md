@@ -1,145 +1,20 @@
-# [RU] YAGkP-Lib — Yet Another Graph k-Partition Library
+<p align="center">
+  <img src="https://github.com/YAGkP/.github/raw/main/profile/yagkp_wordmark.png" alt="YAGkP – Yet Another Graph k-Partitioner" width="640">
+</p>
 
-Библиотека для решения задачи разбиения графа на k частей.
+<h3 align="center">A library for graph k-partitioning. Work in progress...</h3>
 
-## Требования
-
-- Linux или WSL, bash 4.2+
-- CMake 3.21+
-- Компилятор C/C++ с поддержкой C++20 (проверено на GCC 13)
-- git: сторонние библиотеки подключены подмодулями и скачиваются скриптами сборки при первой необходимости
+## Build
 
 ```bash
-git clone https://github.com/Quaha/YAGkP-Lib
+git clone https://github.com/YAGkP/YAGkP-Lib
 cd YAGkP-Lib
+bash build.sh --help
 ```
 
----
+## Useful resources
 
-## Сборка
-
-Общий скрипт `build.sh` принимает режимы и варианты флагами и по очереди вызывает малые скрипты из `scripts/build/`. Справка: `bash build.sh --help`.
-
-| Команда | Что собирается |
-|---|---|
-| `bash build.sh` или `-d` | **debug**: ядро и приложения, без оптимизаций, с отладочной информацией |
-| `bash build.sh -r` | **release**: ядро и `yagkp_partition` |
-| `bash build.sh -p` | **profile**: как release, плюс `-pg` для gprof |
-| `bash build.sh -b` | **benchmark**: ядро и `yagkp_bench` вместе с METIS, KaHIP, SCOTCH, все с одинаковыми флагами |
-| `bash build.sh -a` | все режимы |
-
-Варианты: `--seq` (по умолчанию) и `--par` (параллельная версия, пока заготовка); можно указать оба. Опции: `-c` (собрать с нуля), `-j N`.
-
-Результат: `build/<режим>-<вариант>/`, например `build/release-seq/apps/partition/yagkp_partition`.
-
-Каждый режим можно собрать и напрямую, например `bash scripts/build/release.sh --help`.
-
-### Флаги
-
-Все флаги компиляции заданы в одном месте, `scripts/lib/flags.sh`; в `CMakeLists.txt` их нет.
-
-| Режим | Флаги |
-|---|---|
-| debug | `-O0 -g3` |
-| release, benchmark | `-O3 -DNDEBUG -funroll-loops -march=native` |
-| profile | как release, плюс `-g -pg` |
-
-`-march` задаётся переменной `YAGKP_MARCH`: например, `YAGKP_MARCH=x86-64 bash build.sh -r` даёт бинарь, переносимый между узлами кластера с разными процессорами.
-
-### Сторонние библиотеки
-
-METIS (с GKlib), KaHIP и SCOTCH нужны только режиму benchmark. Каждая собирается своим скриптом из `scripts/deps/` с флагами режима benchmark в `deps/<вариант>/<библиотека>/`. `build.sh -b` вызывает их сам; отдельно: `bash scripts/deps/all.sh`.
-
-Библиотека пересобирается автоматически, если изменились флаги, компилятор, версия исходников или скрипт сборки; иначе сборка пропускается.
-
-### Проверка сборок
-
-```bash
-bash scripts/check_builds.sh            # все режимы с нуля, seq
-bash scripts/check_builds.sh --seq --par
-bash scripts/check_builds.sh --full     # и сторонние библиотеки с нуля
-```
-
-Собирает каждый режим во временном каталоге (рабочий `build/` не затрагивается), запускает собранные программы на тестовом графе и выводит таблицу результатов.
-
-### Структура скриптов
-
-```
-build.sh                   общий скрипт: флаги -> scripts/build/<режим>.sh
-scripts/
-  build/                   debug.sh, release.sh, profile.sh, benchmark.sh
-  deps/                    gklib.sh, metis.sh, scotch.sh, kahip.sh, all.sh
-  lib/                     общие функции (не запускаются сами)
-    common.sh              вывод, проверки, разбор аргументов
-    flags.sh               флаги компиляции всех режимов
-    build.sh, deps.sh      общая логика сборки YAGkP и сторонних библиотек
-  check_builds.sh          проверка всех сборок с нуля
-```
-
----
-
-## Запуск
-
-### Разбиение графа (только YAGkP)
-
-```bash
-./build/release-seq/apps/partition/yagkp_partition --graph data/add20.mtx --k 4
-./build/release-seq/apps/partition/yagkp_partition --graph data/add20.mtx --k 4 \
-    --imbalance 0.01 --output add20.part.4
-```
-
-`--output` сохраняет номер части для каждой вершины, по одному на строку (формат METIS).
-
-### Одиночный замер
-
-```bash
-./build/benchmark-seq/apps/bench/yagkp_bench --graph data/walshaw/add20.mtx --k 4 \
-    --algo kahip_strong --csv
-```
-
-Алгоритмы: `yagkp`, `metis_kway`, `metis_recursive`, `kahip_fast`, `kahip_eco`, `kahip_strong`, `scotch`. `--csv` печатает результат одной строкой CSV (заголовок: `yagkp_bench --csv-header`), `--output <каталог>` дописывает его в таблицу `<граф>_k<k>.txt`. Число потоков YAGkP задаётся `OMP_NUM_THREADS` в сборке `benchmark-par`.
-
-### Наборы графов
-
-```bash
-bash data/download_graphs.sh walshaw
-```
-
-Графы хранятся наборами в отдельном репозитории [YAGkP-Graphs](https://github.com/Quaha/YAGkP-Graphs): каждый набор — архив `<набор>.tar.gz` в релизе с тегом `<набор>`, описание наборов и источники графов — в его README. Сейчас есть один набор, `walshaw`: все 34 графа архива Уолшоу. Скрипт распаковывает архив в `data/<набор>/` (старое содержимое удаляется) и создаёт список графов `data/<набор>_list.txt`. Строку в нём можно закомментировать `#`, тогда бенчмарк пропустит этот граф.
-
-### Бенчмарк по плану
-
-```bash
-bash build.sh -b --par
-bash benchmark/run_benchmark.sh compare     # YAGkP против других решателей
-bash benchmark/run_benchmark.sh scaling     # ускорение YAGkP по потокам
-```
-
-План — файл `benchmark/plans/<план>.sh`: набор графов (`SET`, при желании конкретные `GRAPHS`), значения `KS`, решатели `SOLVERS`, числа потоков `THREADS` (только для YAGkP), число повторов `REPEATS`. Скрипт запускает все сочетания и складывает результаты в `benchmark/results/<дата>_<время>_<план>/` (каталог в `.gitignore`):
-
-- `results.csv` — по строке на запуск: граф, n, m, k, решатель, потоки, повтор, время, разрез, дисбаланс;
-- `plan.sh` — копия плана, `info.txt` — машина, коммит, настройки OpenMP;
-- `errors.log` — вывод упавших запусков, если такие были.
-
-Обработка — отдельными скриптами в `benchmark/analysis/` (нужны `pandas` и `matplotlib`):
-
-```bash
-python3 benchmark/analysis/compare.py benchmark/results/<прогон>    # разрез и время относительно kahip_eco
-python3 benchmark/analysis/scaling.py benchmark/results/<прогон>    # ускорение и разрез по потокам
-```
-
-Таблицы и графики сохраняются в папку прогона.
-
-### Профилирование
-
-```bash
-bash build.sh -p
-./build/profile-seq/apps/partition/yagkp_partition --graph data/auto.mtx --k 32
-gprof ./build/profile-seq/apps/partition/yagkp_partition gmon.out > profile.txt
-```
-
----
-
-## Полезные ресурсы
-- The Graph Partitioning Archive: https://chriswalshaw.co.uk/partition/ - таблица рекордов разделений
-- The SuiteSparse Matrix Collection: https://sparse.tamu.edu - коллекция матриц (откуда взята большая часть графов набора walshaw)
+- [The Graph Partitioning Archive](https://chriswalshaw.co.uk/partition/): the Walshaw benchmark graphs and the best known cuts
+- [SuiteSparse Matrix Collection](https://sparse.tamu.edu): sparse matrices and graphs, including the DIMACS10 set
+- [Network Repository](https://networkrepository.com): graphs from many domains
+- [YAGkP-Graphs](https://github.com/YAGkP/YAGkP-Graphs): graph sets used to test and benchmark YAGkP

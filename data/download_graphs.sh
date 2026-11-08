@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Downloads a set of graphs from https://github.com/Quaha/YAGkP-Graphs
+# Downloads a set of graphs from https://github.com/YAGkP/YAGkP-Graphs
 #
 #   bash data/download_graphs.sh [set]       # set: walshaw (default)
 #
@@ -13,7 +13,7 @@ set -euo pipefail
 
 DATA_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SET="${1:-walshaw}"
-URL="https://github.com/Quaha/YAGkP-Graphs/releases/download/$SET/$SET.tar.gz"
+URL="https://github.com/YAGkP/YAGkP-Graphs/releases/download/$SET/$SET.tar.gz"
 SET_DIR="$DATA_DIR/$SET"
 LIST_FILE="$DATA_DIR/${SET}_list.txt"
 TMP_DIR="$SET_DIR.download" # the old set is replaced only after a successful download
