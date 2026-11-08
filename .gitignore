@@ -1,9 +1,10 @@
 /build/
 /deps/
 /data/*
-!/data/download_graphs.sh
+!/data/graphs_manager.sh
 gmon.out
 compile_commands.json
 /benchmark/results/
 /benchmark/analysis/__pycache__
 /.vscode/
+patch

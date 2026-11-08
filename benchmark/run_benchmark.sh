@@ -4,7 +4,8 @@
 #
 #   bash benchmark/run_benchmark.sh <plan>      # e.g. compare, scaling
 #
-# A plan is benchmark/plans/<plan>.sh: what to run (see the plans there).
+# A plan is benchmark/plans/<plan>.sh: what to run. Every setting, with
+# comments and defaults: benchmark/plan_template.sh.
 # Every combination graph x k x solver x threads x repeat is one run of
 # yagkp_bench. The results go to benchmark/results/<date>_<time>_<plan>/:
 #   results.csv  one line per run (header: yagkp_bench --csv-header)
@@ -22,6 +23,7 @@ ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 if [ $# -ne 1 ]; then
     echo "Usage: bash benchmark/run_benchmark.sh <plan>" >&2
     echo "Plans: $(cd "$SCRIPT_DIR/plans" && ls -1 ./*.sh | sed 's|^\./||; s|\.sh$||' | tr '\n' ' ')" >&2
+    echo "New plan: cp benchmark/plan_template.sh benchmark/plans/<plan>.sh" >&2
     exit 1
 fi
 PLAN_NAME="$1"
@@ -32,10 +34,12 @@ if [ ! -f "$PLAN_FILE" ]; then
 fi
 
 # -----------------------------------------------------------------------------
-# The plan. Defaults for what it does not set
+# The plan. Defaults for what it does not set (keep in sync with
+# benchmark/plan_template.sh)
 # -----------------------------------------------------------------------------
-SET=walshaw
-GRAPHS=()        # empty: all uncommented graphs of data/<SET>_list.txt
+SET=walshaw      # the graph set data/<SET>/: bash data/graphs_manager.sh --install <SET>
+GRAPHS=()        # only these graphs of the set; empty: all of them
+EXCLUDE=()       # graphs of the set to skip
 KS=(2 4 8 16 32 64)
 SOLVERS=(yagkp)
 THREADS=(1)      # used for yagkp only, the other solvers are single-threaded
@@ -47,30 +51,53 @@ source "$PLAN_FILE"
 
 BINARY="$ROOT_DIR/build/benchmark-$VARIANT/apps/bench/yagkp_bench"
 SET_DIR="$ROOT_DIR/data/$SET"
-LIST_FILE="$ROOT_DIR/data/${SET}_list.txt"
 
 if [ ! -x "$BINARY" ]; then
     echo "Error: $BINARY not found. Build it first: bash build.sh --benchmark --$VARIANT" >&2
     exit 1
 fi
 
-if [ ${#GRAPHS[@]} -eq 0 ]; then
-    if [ ! -f "$LIST_FILE" ]; then
-        echo "Error: $LIST_FILE not found. Download the set first: bash data/download_graphs.sh $SET" >&2
-        exit 1
-    fi
-    while read -r name _; do
-        [[ -z "${name:-}" || "$name" == \#* ]] && continue
-        GRAPHS+=("$name")
-    done <"$LIST_FILE"
+# -----------------------------------------------------------------------------
+# The graphs: the set's graphs from GRAPHS (or all), except EXCLUDE, from the
+# smallest file to the largest, so that errors show up early
+# -----------------------------------------------------------------------------
+if ! ls "$SET_DIR"/*.mtx >/dev/null 2>&1; then
+    echo "Error: the set '$SET' is not installed. Install it: bash data/graphs_manager.sh --install $SET" >&2
+    echo "       (available sets: bash data/graphs_manager.sh --list)" >&2
+    exit 1
 fi
 
-for name in "${GRAPHS[@]}"; do
+for name in "${GRAPHS[@]}" "${EXCLUDE[@]}"; do
     if [ ! -f "$SET_DIR/$name.mtx" ]; then
-        echo "Error: $SET_DIR/$name.mtx not found" >&2
+        echo "Error: there is no graph '$name' in the set '$SET'" >&2
         exit 1
     fi
 done
+
+contains() { # contains <name> <list...>: whether the name is in the list
+    local name="$1" item
+    shift
+    for item in "$@"; do
+        [ "$item" = "$name" ] && return 0
+    done
+    return 1
+}
+
+selected=()
+while read -r file; do
+    name="$(basename "$file" .mtx)"
+    if [ ${#GRAPHS[@]} -gt 0 ] && ! contains "$name" "${GRAPHS[@]}"; then
+        continue
+    fi
+    contains "$name" "${EXCLUDE[@]}" && continue
+    selected+=("$name")
+done < <(ls -1Sr "$SET_DIR"/*.mtx)
+GRAPHS=("${selected[@]}")
+
+if [ ${#GRAPHS[@]} -eq 0 ]; then
+    echo "Error: no graphs left in the set '$SET' after GRAPHS and EXCLUDE" >&2
+    exit 1
+fi
 
 # Threads are pinned to cores, as is usual for OpenMP measurements
 export OMP_PROC_BIND="${OMP_PROC_BIND:-close}"
