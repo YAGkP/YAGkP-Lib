@@ -62,14 +62,8 @@ namespace yagkp {
 		    bool ignore_eweights = false
 		);
 
-		void buildGraph(const spMtx<double>& matrix, bool ignore_eweights);
-
 		int_t getVerticesCount() const noexcept {
 			return n;
-		}
-
-		int_t getEdgesCount() const noexcept {
-			return m;
 		}
 
 		int_t getSumOfVertexWeights() const {
@@ -81,5 +75,8 @@ namespace yagkp {
 		}
 
 		Graph selectSubgraph(const std::vector<int_t>& sub_vertices) const;
+
+	  private:
+		void buildGraph(const spMtx<double>& matrix, bool ignore_eweights);
 	};
 } // namespace yagkp

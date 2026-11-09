@@ -4,7 +4,7 @@
 #include "benchmark.hpp"
 #include "yagkp/config.hpp"
 
-// ./yagkp_bench --graph ../data/add20.mtx --k 4 --algo kahip_strong --output ../benchmark/results/
+// ./yagkp_bench --graph ../data/add20.mtx --k 4 --algo kahip_strong      # строка таблицы
 // ./yagkp_bench --graph ../data/add20.mtx --k 4 --algo yagkp --csv   # одна строка CSV
 // ./yagkp_bench --csv-header                                          # заголовок CSV
 
@@ -12,7 +12,6 @@ int main(int argc, char* argv[]) {
 
 	std::string graph_path;
 	std::string algo;
-	std::string output_dir;
 	int k    = 0;
 	bool csv = false;
 
@@ -27,9 +26,6 @@ int main(int argc, char* argv[]) {
 		else if (arg == "--algo" && i + 1 < argc) {
 			algo = argv[++i];
 		}
-		else if (arg == "--output" && i + 1 < argc) {
-			output_dir = argv[++i];
-		}
 		else if (arg == "--imbalance" && i + 1 < argc) {
 			yagkp::ProgramConfig::imbalance = std::stod(argv[++i]);
 		}
@@ -42,9 +38,9 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	if (graph_path.empty() || k == 0 || algo.empty() || (output_dir.empty() && !csv)) {
+	if (graph_path.empty() || k == 0 || algo.empty()) {
 		std::cerr << "Usage: yagkp_bench --graph <path> --k <k> --algo <algo>"
-		             " (--output <dir> | --csv) [--imbalance <eps>]"
+		             " [--csv] [--imbalance <eps>]"
 		          << std::endl;
 		std::cerr << "       yagkp_bench --csv-header" << std::endl;
 		std::cerr << "Algos: yagkp, kahip_strong, kahip_eco, kahip_fast, metis_kway, "
@@ -53,7 +49,7 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
-	yagkp::benchmark::RunSingle(graph_path, k, algo, output_dir, csv);
+	yagkp::benchmark::RunSingle(graph_path, k, algo, csv);
 
 	return 0;
 }

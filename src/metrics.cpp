@@ -29,25 +29,28 @@ namespace yagkp::PartitionMetrics {
 		return edge_cut;
 	}
 
-	std::vector<fp_t> GetBalances(
-	    const Graph& graph,
-	    const int_t k,
-	    const std::vector<int_t>& partition
-	) {
-		std::vector<fp_t> balances(k, 0.0);
+	namespace {
+		// Relative weight of every part: the fraction of the total vertex weight
+		std::vector<fp_t> GetBalances(
+		    const Graph& graph,
+		    const int_t k,
+		    const std::vector<int_t>& partition
+		) {
+			std::vector<fp_t> balances(k, 0.0);
 
-		int_t total_W = graph.getSumOfVertexWeights();
+			int_t total_W = graph.getSumOfVertexWeights();
 
-		for (int_t curr_V = 0; curr_V < graph.getVerticesCount(); ++curr_V) {
-			balances[partition[curr_V]] += static_cast<fp_t>(graph.vertex_weights[curr_V]);
+			for (int_t curr_V = 0; curr_V < graph.getVerticesCount(); ++curr_V) {
+				balances[partition[curr_V]] += static_cast<fp_t>(graph.vertex_weights[curr_V]);
+			}
+
+			for (int_t curr_V = 0; curr_V < k; ++curr_V) {
+				balances[curr_V] = balances[curr_V] / total_W;
+			}
+
+			return balances;
 		}
-
-		for (int_t curr_V = 0; curr_V < k; ++curr_V) {
-			balances[curr_V] = balances[curr_V] / total_W;
-		}
-
-		return balances;
-	}
+	} // namespace
 
 	fp_t GetImbalance(const Graph& graph, const int_t k, const std::vector<int_t>& partition) {
 		std::vector<fp_t> balances = GetBalances(graph, k, partition);

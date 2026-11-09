@@ -42,7 +42,7 @@ namespace yagkp::Bipartitioner {
 		std::vector<Part> GraphGrowingAlgorithm(
 		    const Graph& graph,
 		    const int_t C1,
-		    const int_t C2
+		    [[maybe_unused]] const int_t C2
 		) {
 			return GetBestBipartition(graph, [&]() {
 				const int_t n = graph.n;
@@ -91,7 +91,7 @@ namespace yagkp::Bipartitioner {
 		std::vector<Part> GreedyGraphGrowingAlgorithm(
 		    const Graph& graph,
 		    const int_t C1,
-		    const int_t C2
+		    [[maybe_unused]] const int_t C2
 		) {
 			const int_t n = graph.n;
 
@@ -125,13 +125,13 @@ namespace yagkp::Bipartitioner {
 					}
 				};
 
-				int_t next_unchecked = 0; 
+				int_t next_unchecked = 0;
 
 				bool progressed = true;
 				while (progressed) {
 					progressed = false;
 
-					for (;next_unchecked < n; next_unchecked++) {
+					for (; next_unchecked < n; next_unchecked++) {
 						int_t V = order[next_unchecked];
 						if (blocked[V])
 							continue;

@@ -2,7 +2,6 @@
 
 #include <chrono>
 #include <filesystem>
-#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -19,14 +18,7 @@
 
 namespace yagkp::benchmark {
 
-	void RunSingle(
-	    const std::string& graph_path,
-	    int k,
-	    const std::string& algo,
-	    const std::string& output_dir,
-	    const bool csv
-	) {
-		std::string graph_name = std::filesystem::path(graph_path).filename().string();
+	void RunSingle(const std::string& graph_path, int k, const std::string& algo, const bool csv) {
 		Graph g(graph_path, "mtx", true);
 
 		auto run = [&](const std::string& name) -> std::tuple<long long, int_t, double, int_t> {
@@ -67,8 +59,6 @@ namespace yagkp::benchmark {
 		auto [time_ms, edge_cut, imbalance, max_part] = run(algo);
 		double opt = static_cast<double>(g.getSumOfVertexWeights()) / static_cast<double>(k);
 
-		std::string stem = graph_name + "_k" + std::to_string(k);
-
 		std::ostringstream pct;
 		pct << std::fixed << std::setprecision(2) << imbalance * 100.0 << "%";
 
@@ -86,30 +76,5 @@ namespace yagkp::benchmark {
 			          << std::setw(12) << time_ms << std::setw(14) << edge_cut << std::setw(12)
 			          << pct.str() << std::setw(14) << max_part << std::setw(14) << opt << "\n";
 		}
-
-		if (output_dir.empty()) {
-			return;
-		}
-
-		// === TXT ===
-		std::filesystem::create_directories(output_dir);
-		std::string txt_path = output_dir + "/" + stem + ".txt";
-		bool txt_exists      = std::filesystem::exists(txt_path);
-
-		std::ofstream txt(txt_path, std::ios::app);
-		if (!txt_exists) {
-			txt << "# Graph: " << graph_name << "  n=" << g.n << "  m=" << g.m << "  k=" << k << " "
-			    << "imb=" << ProgramConfig::imbalance << "\n";
-			txt << "# " << std::string(86, '-') << "\n";
-			txt << "# " << std::left << std::setw(16) << "algo" << std::setw(12) << "time(ms)"
-			    << std::setw(14) << "edge cut" << std::setw(12) << "imbalance" << std::setw(14)
-			    << "max part" << std::setw(14) << "opt part"
-			    << "\n";
-			txt << "# " << std::string(86, '-') << "\n";
-		}
-
-		txt << std::left << std::fixed << std::setprecision(2) << std::setw(16) << algo
-		    << std::setw(12) << time_ms << std::setw(14) << edge_cut << std::setw(12) << pct.str()
-		    << std::setw(14) << max_part << std::setw(14) << opt << "\n";
 	}
 } // namespace yagkp::benchmark
