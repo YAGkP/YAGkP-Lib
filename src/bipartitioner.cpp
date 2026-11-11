@@ -21,8 +21,6 @@ namespace yagkp::Bipartitioner {
 			std::vector<std::vector<Part>> partitions(launches);
 			std::vector<int_t> edge_cuts(launches);
 
-			// taskloop: итерации цикла раздаются как задачи той же команде потоков
-			// grainsize(1): каждый запуск - отдельная задача
 #pragma omp taskloop default(none) grainsize(1)                                                    \
     shared(graph, bipartition_algorithm, partitions, edge_cuts) firstprivate(launches)
 			for (int_t i = 0; i < launches; ++i) {

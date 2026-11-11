@@ -16,7 +16,7 @@ namespace yagkp::Coarser {
 
 		std::vector<int_t>& ThreadMarker(const int_t size) {
 			thread_local std::vector<int_t> marker;
-			if ((int_t)marker.size() < size) {
+			if (static_cast<int_t>(marker.size()) < size) {
 				marker.resize(size, -1);
 			}
 			return marker;
