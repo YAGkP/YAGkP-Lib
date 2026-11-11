@@ -61,7 +61,7 @@ target_include_directories(yagkp PUBLIC
 )
 
 # Сторонние заголовки как системные: их предупреждения не показываются
-# (matrix.hpp, например, содержит #pragma omp, а включается в graph.hpp)
+# (matrix.hpp, например, содержит #pragma omp)
 target_include_directories(yagkp SYSTEM PUBLIC
     ${PROJECT_SOURCE_DIR}/external   # для "mmio/matrix.hpp"
 )

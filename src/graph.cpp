@@ -2,17 +2,16 @@
 
 #include <numeric>
 
+#include "mmio/matrix.hpp"
+
 namespace yagkp {
 
 	UndirectedGraph::UndirectedGraph() {
 	}
 
 	UndirectedGraph::UndirectedGraph(const std::string& file_name, const std::string& format, bool ignore_eweights) {
-		spMtx<double> matrix(file_name.c_str(), format);
-		buildGraph(matrix, ignore_eweights);
-	}
+		const spMtx<double> matrix(file_name.c_str(), format);
 
-	void UndirectedGraph::buildGraph(const spMtx<double>& matrix, bool ignore_eweights) {
 		n = static_cast<int_t>(matrix.m);
 		// Every edge is read in both directions, so there are 2m entries
 		const int_t entries = static_cast<int_t>(matrix.nz);

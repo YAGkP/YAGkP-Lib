@@ -1,9 +1,9 @@
 #pragma once
 
+#include <string>
 #include <utility>
 #include <vector>
 
-#include "mmio/matrix.hpp"
 #include "yagkp/types.hpp"
 
 namespace yagkp {
@@ -69,8 +69,5 @@ namespace yagkp {
 		);
 
 		UndirectedGraph selectSubgraph(const std::vector<int_t>& sub_vertices) const;
-
-	  private:
-		void buildGraph(const spMtx<double>& matrix, bool ignore_eweights);
 	};
 } // namespace yagkp

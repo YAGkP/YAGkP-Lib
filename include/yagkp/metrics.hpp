@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vector>
-
 #include "yagkp/graph.hpp"
 #include "yagkp/types.hpp"
 

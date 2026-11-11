@@ -14,7 +14,6 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
-#include <vector>
 
 #include "yagkp/config.hpp"
 #include "yagkp/graph.hpp"
