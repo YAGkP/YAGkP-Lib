@@ -25,8 +25,8 @@
 namespace {
 
 	struct Options {
-		string graph_path;
-		string output_path; // пусто: разбиение не сохраняется
+		std::string graph_path;
+		std::string output_path; // пусто: разбиение не сохраняется
 		yagkp::int_t k        = 0;
 		yagkp::fp_t imbalance = yagkp::ProgramConfig::imbalance;
 	};
@@ -46,7 +46,7 @@ namespace {
 	// Возвращает false, если аргументы неверны (сообщение уже выведено)
 	bool ParseArgs(int argc, char* argv[], Options& opts, bool& show_help) {
 		for (int i = 1; i < argc; ++i) {
-			const string arg = argv[i];
+			const std::string arg = argv[i];
 
 			if (arg == "-h" || arg == "--help") {
 				show_help = true;
@@ -57,7 +57,7 @@ namespace {
 				std::cerr << "Ошибка: у аргумента " << arg << " нет значения\n";
 				return false;
 			}
-			const string value = argv[++i];
+			const std::string value = argv[++i];
 
 			if (arg == "--graph") {
 				opts.graph_path = value;
@@ -92,7 +92,7 @@ namespace {
 		return true;
 	}
 
-	void SavePartition(const string& path, const yagkp::Partition& partition) {
+	void SavePartition(const std::string& path, const yagkp::Partition& partition) {
 		std::ofstream out(path);
 		if (!out) {
 			throw std::runtime_error("не удалось открыть для записи: " + path);
