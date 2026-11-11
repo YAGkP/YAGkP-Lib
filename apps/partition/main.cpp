@@ -130,7 +130,7 @@ int main(int argc, char* argv[]) {
 	ProgramConfig::imbalance = opts.imbalance;
 
 	try {
-		const Graph graph(opts.graph_path, "mtx", true);
+		const UndirectedGraph graph(opts.graph_path, "mtx", true);
 
 		const auto start          = std::chrono::steady_clock::now();
 		const Partition partition = Partitioner::GetGraphKPartition(graph, opts.k);

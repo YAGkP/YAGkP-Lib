@@ -13,7 +13,7 @@ namespace yagkp::Bipartitioner {
 	namespace {
 		template <typename BipartitionAlgorithm>
 		Bisection GetBestBipartition(
-		    const Graph& graph,
+		    const UndirectedGraph& graph,
 		    const BipartitionAlgorithm& bipartition_algorithm
 		) {
 			const int_t launches = ProgramConfig::bipartitioning_launches_count;
@@ -38,7 +38,7 @@ namespace yagkp::Bipartitioner {
 		}
 
 		Bisection GraphGrowingAlgorithm(
-		    const Graph& graph,
+		    const UndirectedGraph& graph,
 		    const int_t C1,
 		    [[maybe_unused]] const int_t C2
 		) {
@@ -87,7 +87,7 @@ namespace yagkp::Bipartitioner {
 		}
 
 		Bisection GreedyGraphGrowingAlgorithm(
-		    const Graph& graph,
+		    const UndirectedGraph& graph,
 		    const int_t C1,
 		    [[maybe_unused]] const int_t C2
 		) {
@@ -133,13 +133,13 @@ namespace yagkp::Bipartitioner {
 						int_t V = order[next_unchecked];
 						if (blocked[V])
 							continue;
-						if (current_weight + graph.getVertexWeight(V) > C1)
+						if (current_weight + graph.vertex_weights[V] > C1)
 							continue;
 
 						progressed   = true;
 						partition[V] = Part::First;
 						blocked[V]   = true;
-						current_weight += graph.getVertexWeight(V);
+						current_weight += graph.vertex_weights[V];
 
 						for (auto [u, w]: graph[V])
 							touch(u, w);
@@ -167,7 +167,7 @@ namespace yagkp::Bipartitioner {
 		}
 	} // namespace
 
-	Bisection GetGraphBipartition(const Graph& graph, const int_t C1, const int_t C2) {
+	Bisection GetGraphBipartition(const UndirectedGraph& graph, const int_t C1, const int_t C2) {
 
 		using Method = ProgramConfig::BipartitioningMethod;
 

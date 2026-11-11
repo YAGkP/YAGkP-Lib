@@ -26,7 +26,7 @@ namespace yagkp::Partitioner {
 		// offset: starting index for parts in this call        | 2
 		// returns: vector of part indices (offset..offset+k-1) | {2, 2, 3, 3}
 		Partition RecursivePartition(
-		    const Graph& graph,
+		    const UndirectedGraph& graph,
 		    const int_t k,
 		    const int_t M,
 		    int_t offset
@@ -43,10 +43,10 @@ namespace yagkp::Partitioner {
 			{
 
 				std::vector<CoarseLevel> coarse_levels = Coarser::GetCoarseLevels(graph, k);
-				const Graph& coarsened_graph =
+				const UndirectedGraph& coarsened_graph =
 				    coarse_levels.empty() ? graph : coarse_levels.back().coarsened_graph;
 
-				const fp_t W   = fp_t(graph.getSumOfVertexWeights());
+				const fp_t W   = fp_t(graph.total_vertex_weight);
 				const int_t C1 = GetHalfLimit(W, M, k1, k);
 				const int_t C2 = GetHalfLimit(W, M, k2, k);
 
@@ -65,8 +65,8 @@ namespace yagkp::Partitioner {
 				}
 			}
 
-			Graph first_graph  = graph.selectSubgraph(first_part_vertices);
-			Graph second_graph = graph.selectSubgraph(second_part_vertices);
+			UndirectedGraph first_graph  = graph.selectSubgraph(first_part_vertices);
+			UndirectedGraph second_graph = graph.selectSubgraph(second_part_vertices);
 
 			Partition partition1;
 			Partition partition2;
@@ -90,9 +90,9 @@ namespace yagkp::Partitioner {
 		}
 	} // namespace
 
-	Partition GetGraphKPartition(const Graph& graph, const int_t k) {
+	Partition GetGraphKPartition(const UndirectedGraph& graph, const int_t k) {
 
-		const int_t W = graph.getSumOfVertexWeights();
+		const int_t W = graph.total_vertex_weight;
 
 		const int_t M = std::max(
 		    int_t(fp_t(W) / fp_t(k) * (1.0 + ProgramConfig::imbalance) + ProgramConfig::EPS),

@@ -4,20 +4,22 @@
 
 namespace yagkp {
 
-	Graph::Graph() {
+	UndirectedGraph::UndirectedGraph() {
 	}
 
-	Graph::Graph(const std::string& file_name, const std::string& format, bool ignore_eweights) {
+	UndirectedGraph::UndirectedGraph(const std::string& file_name, const std::string& format, bool ignore_eweights) {
 		spMtx<double> matrix(file_name.c_str(), format);
 		buildGraph(matrix, ignore_eweights);
 	}
 
-	void Graph::buildGraph(const spMtx<double>& matrix, bool ignore_eweights) {
+	void UndirectedGraph::buildGraph(const spMtx<double>& matrix, bool ignore_eweights) {
 		n = static_cast<int_t>(matrix.m);
-		m = static_cast<int_t>(matrix.nz);
+		// Every edge is read in both directions, so there are 2m entries
+		const int_t entries = static_cast<int_t>(matrix.nz);
+		m                   = entries / 2;
 
-		adjncy.resize(m);
-		for (int_t i = 0; i < m; ++i) {
+		adjncy.resize(entries);
+		for (int_t i = 0; i < entries; ++i) {
 			adjncy[i] = static_cast<int_t>(matrix.Col[i]);
 		}
 
@@ -34,21 +36,21 @@ namespace yagkp {
 		total_vertex_weight =
 		    std::accumulate(vertex_weights.begin(), vertex_weights.end(), int_t{0});
 
-		edge_weights.resize(m);
+		edge_weights.resize(entries);
 		if (matrix.Val != nullptr && !ignore_eweights) {
-			for (int_t i = 0; i < m; ++i) {
+			for (int_t i = 0; i < entries; ++i) {
 				edge_weights[i] = static_cast<int_t>(matrix.Val[i]);
 			}
 		}
 		else {
-			for (int_t i = 0; i < m; ++i) {
+			for (int_t i = 0; i < entries; ++i) {
 				edge_weights[i] = 1;
 			}
 		}
 	}
 
-	Graph Graph::selectSubgraph(const std::vector<int_t>& sub_vertices) const {
-		Graph subgraph;
+	UndirectedGraph UndirectedGraph::selectSubgraph(const std::vector<int_t>& sub_vertices) const {
+		UndirectedGraph subgraph;
 
 		std::vector<int_t> original_to_sub(n, -1);
 		for (int_t i = 0; i < (int_t)sub_vertices.size(); ++i) {
@@ -74,16 +76,18 @@ namespace yagkp {
 			is_exist[curr_V] = true;
 		}
 
+		int_t entries = 0;
 		for (int_t curr_V: sub_vertices) {
 			for (int_t i = xadj[curr_V]; i < xadj[curr_V + 1]; ++i) {
 				if (is_exist[adjncy[i]]) {
-					++subgraph.m;
+					++entries;
 				}
 			}
 		}
+		subgraph.m = entries / 2;
 
-		subgraph.adjncy.resize(subgraph.m);
-		subgraph.edge_weights.resize(subgraph.m);
+		subgraph.adjncy.resize(entries);
+		subgraph.edge_weights.resize(entries);
 
 		subgraph.xadj.resize(subgraph.n + 1);
 		subgraph.xadj[0] = 0;

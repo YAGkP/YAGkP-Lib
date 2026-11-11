@@ -31,7 +31,7 @@ namespace yagkp::Uncoarser {
 			return prev_partition;
 		}
 
-		inline int_t GetGain(int_t V, const Graph& graph, const Bisection& partition) {
+		inline int_t GetGain(int_t V, const UndirectedGraph& graph, const Bisection& partition) {
 			int_t gain = 0;
 			for (auto [next_V, w]: graph[V]) {
 				if (partition[V] != partition[next_V]) {
@@ -51,7 +51,7 @@ namespace yagkp::Uncoarser {
 		using GainQueues = std::array<BucketPriorityQueue, 2>;
 
 		GainQueues GetGainQueues(
-		    const Graph& graph,
+		    const UndirectedGraph& graph,
 		    const Bisection& partition,
 		    const int_t max_possible_gain
 		) {
@@ -65,7 +65,7 @@ namespace yagkp::Uncoarser {
 			return heaps;
 		}
 
-		std::array<int_t, 2> GetPartWeights(const Graph& graph, const Bisection& partition) {
+		std::array<int_t, 2> GetPartWeights(const UndirectedGraph& graph, const Bisection& partition) {
 			std::array<int_t, 2> weights = {0, 0};
 			for (int_t curr_V = 0; curr_V < graph.n; curr_V++) {
 				weights[Side(partition[curr_V])] += graph.vertex_weights[curr_V];
@@ -75,7 +75,7 @@ namespace yagkp::Uncoarser {
 
 		inline void UpdateNearGains(
 		    int_t V,
-		    const Graph& graph,
+		    const UndirectedGraph& graph,
 		    const Bisection& partition,
 		    const std::vector<char>& blocked,
 		    GainQueues& heaps
@@ -99,7 +99,7 @@ namespace yagkp::Uncoarser {
 		 * @return improved partition of the graph
 		 */
 		Bisection KernighanLinBlocking(
-		    const Graph& graph,
+		    const UndirectedGraph& graph,
 		    Bisection current_partition,
 		    const int_t C1,
 		    const int_t C2
@@ -264,7 +264,7 @@ namespace yagkp::Uncoarser {
 		 * @return improved partition of the previous coarsening level graph
 		 */
 		Bisection KernighanLinBlocking(
-		    const Graph& previous_graph,
+		    const UndirectedGraph& previous_graph,
 		    const CoarseLevel& coarse_level,
 		    const Bisection& coarse_partition,
 		    const int_t C1,
@@ -280,7 +280,7 @@ namespace yagkp::Uncoarser {
 	} // namespace
 
 	Bisection RestorePartition(
-	    const Graph& graph,
+	    const UndirectedGraph& graph,
 	    const std::vector<CoarseLevel>& levels,
 	    Bisection partition,
 	    const int_t C1,

@@ -7,12 +7,18 @@
 #include "yagkp/types.hpp"
 
 namespace yagkp {
-	struct Graph {
+	// Undirected graph with weighted vertices and edges, in CSR format.
+	//
+	// Every edge {u, v} is stored twice: as v in the neighbours of u and as u
+	// in the neighbours of v, with the same weight. So adjncy and edge_weights
+	// have 2m entries. The neighbours of v are adjncy[xadj[v] .. xadj[v + 1]),
+	// and edge_weights holds the weights of these edges at the same positions.
+	// An input file must therefore describe a symmetric matrix
+	struct UndirectedGraph {
+		int_t n = 0; // number of vertices
+		int_t m = 0; // number of edges (each stored twice, see above)
 
-		int_t n = 0;
-		int_t m = 0;
-
-		int_t total_vertex_weight = 0;
+		int_t total_vertex_weight = 0; // sum of vertex_weights
 
 		std::vector<int_t> adjncy;
 		std::vector<int_t> xadj;
@@ -20,14 +26,14 @@ namespace yagkp {
 		std::vector<int_t> edge_weights;
 
 		struct AdjacentIterator {
-			const Graph& g;
+			const UndirectedGraph& g;
 			int_t v;
 
 			struct Iterator {
-				const Graph& g;
+				const UndirectedGraph& g;
 				int_t pos;
 
-				Iterator(const Graph& g, int_t pos) : g(g), pos(pos) {
+				Iterator(const UndirectedGraph& g, int_t pos) : g(g), pos(pos) {
 				}
 
 				bool operator!=(const Iterator& other) const {
@@ -55,26 +61,14 @@ namespace yagkp {
 			return AdjacentIterator{*this, v};
 		}
 
-		Graph();
-		Graph(
+		UndirectedGraph();
+		UndirectedGraph(
 		    const std::string& file_name,
 		    const std::string& format,
 		    bool ignore_eweights = false
 		);
 
-		int_t getVerticesCount() const noexcept {
-			return n;
-		}
-
-		int_t getSumOfVertexWeights() const {
-			return total_vertex_weight;
-		}
-
-		int_t getVertexWeight(int_t v) const {
-			return vertex_weights[v];
-		}
-
-		Graph selectSubgraph(const std::vector<int_t>& sub_vertices) const;
+		UndirectedGraph selectSubgraph(const std::vector<int_t>& sub_vertices) const;
 
 	  private:
 		void buildGraph(const spMtx<double>& matrix, bool ignore_eweights);
