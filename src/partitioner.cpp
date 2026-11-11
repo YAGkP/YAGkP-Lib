@@ -100,12 +100,12 @@ namespace yagkp::Partitioner {
 
 	std::vector<int_t> GetGraphKPartition(const Graph& graph, const int_t k) {
 
-		fp_t opt_part_value = fp_t(graph.getSumOfVertexWeights()) / fp_t(k);
+		const int_t W = graph.getSumOfVertexWeights();
 
 		const int_t M = std::max(
-		    int_t(opt_part_value * (1.0 + ProgramConfig::imbalance) + ProgramConfig::EPS),
-		    int_t(std::ceil(opt_part_value + ProgramConfig::EPS))
-		); // max part weight
+		    int_t(fp_t(W) / fp_t(k) * (1.0 + ProgramConfig::imbalance) + ProgramConfig::EPS),
+		    (W + k - 1) / k
+		);
 
 		std::vector<std::vector<int_t>> partitions(ProgramConfig::runs);
 
