@@ -221,7 +221,6 @@ namespace yagkp::Uncoarser {
 
 					blocked[curr_V] = true;
 
-
 					gains.push_back(gain);
 					vertices.push_back(curr_V);
 
@@ -284,6 +283,7 @@ namespace yagkp::Uncoarser {
 	} // namespace
 
 	std::vector<Part> RestorePartition(
+	    const Graph& graph,
 	    const std::vector<CoarseLevel>& levels,
 	    std::vector<Part> partition,
 	    const int_t C1,
@@ -293,23 +293,18 @@ namespace yagkp::Uncoarser {
 
 		switch (ProgramConfig::uncoarsening_method) {
 		case Method::DirectMapping:
-			for (int_t i = levels.size() - 1; i > 0; i--) {
+			for (int_t i = levels.size() - 1; i >= 0; i--) {
 				partition = Uncoarser::DirectMapping(levels[i], partition);
 			}
 			return partition;
 
 		case Method::KernighanLin:
-			if (levels.size() == 1) {
-				partition = Uncoarser::KernighanLinBlocking(
-				    levels[0].coarsened_graph,
-				    std::move(partition),
-				    C1,
-				    C2
-				);
+			if (levels.empty()) {
+				partition = Uncoarser::KernighanLinBlocking(graph, std::move(partition), C1, C2);
 			}
-			for (int_t i = levels.size() - 1; i > 0; i--) {
+			for (int_t i = levels.size() - 1; i >= 0; i--) {
 				partition = Uncoarser::KernighanLinBlocking(
-				    levels[i - 1].coarsened_graph,
+				    i > 0 ? levels[i - 1].coarsened_graph : graph,
 				    levels[i],
 				    partition,
 				    C1,

@@ -1,7 +1,6 @@
 #include "yagkp/coarsening.hpp"
 
 #include <algorithm>
-#include <numeric>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -22,10 +21,13 @@ namespace yagkp::Coarser {
 			return marker;
 		}
 
-		CoarseLevel ContractMatching(const CoarseLevel& level, const std::vector<int_t>& matching) {
-
-			const Graph& graph = level.coarsened_graph;
-			const int_t n      = graph.n;
+		// graph: the graph to contract; included_ew: edge weight inside each of its vertices
+		CoarseLevel ContractMatching(
+		    const Graph& graph,
+		    const std::vector<int_t>& included_ew,
+		    const std::vector<int_t>& matching
+		) {
+			const int_t n = graph.n;
 
 			[[maybe_unused]] const int_t grain_size = ProgramConfig::parallel_loop_grain_size;
 			[[maybe_unused]] const bool is_parallel =
@@ -143,7 +145,7 @@ namespace yagkp::Coarser {
 				);
 
 				for (int_t u_curr_V: coarse_to_uncoarse[c_curr_V]) {
-					included_ew_in_vertex[c_curr_V] += level.included_ew_in_vertex[u_curr_V];
+					included_ew_in_vertex[c_curr_V] += included_ew[u_curr_V];
 				}
 				included_ew_in_vertex[c_curr_V] += internal_edge_weight[c_curr_V] / 2;
 			}
@@ -158,12 +160,11 @@ namespace yagkp::Coarser {
 
 		template <typename EdgeRating>
 		std::vector<int_t> GetGreedyMatching(
-		    const CoarseLevel& level,
+		    const Graph& graph,
 		    const int_t k,
 		    const EdgeRating& edge_rating
 		) {
-			const Graph& graph = level.coarsened_graph;
-			const int_t n      = graph.n;
+			const int_t n = graph.n;
 
 			std::vector<int_t> permutation = GetRandomPermutation(n);
 
@@ -223,52 +224,54 @@ namespace yagkp::Coarser {
 			return matching;
 		}
 
-		std::vector<int_t> RandomMatching(const CoarseLevel& level, const int_t k) {
-			return GetGreedyMatching(level, k, [](int_t, int_t, int_t) { return 0; });
+		std::vector<int_t> RandomMatching(const Graph& graph, const int_t k) {
+			return GetGreedyMatching(graph, k, [](int_t, int_t, int_t) { return 0; });
 		}
 
-		std::vector<int_t> LightEdgeMatching(const CoarseLevel& level, const int_t k) {
-			return GetGreedyMatching(level, k, [](int_t, int_t, int_t w) { return -w; });
+		std::vector<int_t> LightEdgeMatching(const Graph& graph, const int_t k) {
+			return GetGreedyMatching(graph, k, [](int_t, int_t, int_t w) { return -w; });
 		}
 
-		std::vector<int_t> HeavyEdgeMatching(const CoarseLevel& level, const int_t k) {
-			return GetGreedyMatching(level, k, [](int_t, int_t, int_t w) { return w; });
+		std::vector<int_t> HeavyEdgeMatching(const Graph& graph, const int_t k) {
+			return GetGreedyMatching(graph, k, [](int_t, int_t, int_t w) { return w; });
 		}
 
-		std::vector<int_t> HeavyCliqueMatching(const CoarseLevel& level, const int_t k) {
-			auto clique_density = [&level](int_t curr_V, int_t next_V, int_t w) -> fp_t {
-				int_t total_W = level.coarsened_graph.vertex_weights[curr_V] +
-				                level.coarsened_graph.vertex_weights[next_V];
-				return 2.0 *
-				       fp_t(
-				           w + level.included_ew_in_vertex[curr_V] +
-				           level.included_ew_in_vertex[next_V]
-				       ) /
-				       fp_t(
-				           std::max(
-				               1ll,
-				               static_cast<long long>(total_W) * static_cast<long long>(total_W - 1)
-				           )
-				       );
+		std::vector<int_t> HeavyCliqueMatching(
+		    const Graph& graph,
+		    const std::vector<int_t>& included_ew,
+		    const int_t k
+		) {
+			auto clique_density = [&graph,
+			                       &included_ew](int_t curr_V, int_t next_V, int_t w) -> fp_t {
+				int_t total_W = graph.vertex_weights[curr_V] + graph.vertex_weights[next_V];
+				return 2.0 * fp_t(w + included_ew[curr_V] + included_ew[next_V]) /
+				       fp_t(std::max(
+				           1ll,
+				           static_cast<long long>(total_W) * static_cast<long long>(total_W - 1)
+				       ));
 			};
-			return GetGreedyMatching(level, k, clique_density);
+			return GetGreedyMatching(graph, k, clique_density);
 		}
 
-		std::vector<int_t> GetMatching(const CoarseLevel& level, const int_t k) {
+		std::vector<int_t> GetMatching(
+		    const Graph& graph,
+		    const std::vector<int_t>& included_ew,
+		    const int_t k
+		) {
 			using Method = ProgramConfig::CoarseningMethod;
 
 			switch (ProgramConfig::coarsening_method) {
 			case Method::RandomMatching:
-				return RandomMatching(level, k);
+				return RandomMatching(graph, k);
 
 			case Method::LightEdgeMatching:
-				return LightEdgeMatching(level, k);
+				return LightEdgeMatching(graph, k);
 
 			case Method::HeavyEdgeMatching:
-				return HeavyEdgeMatching(level, k);
+				return HeavyEdgeMatching(graph, k);
 
 			case Method::HeavyCliqueMatching:
-				return HeavyCliqueMatching(level, k);
+				return HeavyCliqueMatching(graph, included_ew, k);
 			}
 
 			throw std::logic_error("Unknown coarsening method");
@@ -277,39 +280,31 @@ namespace yagkp::Coarser {
 
 	std::vector<CoarseLevel> GetCoarseLevels(const Graph& graph, const int_t k) {
 		std::vector<CoarseLevel> levels;
-		levels.reserve(ProgramConfig::coarsening_iterations_limit + 1);
+		levels.reserve(ProgramConfig::coarsening_iterations_limit);
 
-		// Entry-level initialization
-		std::vector<int_t> base_uncoarse_to_coarse(graph.n);
-		std::iota(base_uncoarse_to_coarse.begin(), base_uncoarse_to_coarse.end(), 0);
-
-		std::vector<std::vector<int_t>> base_coarse_to_uncoarse(graph.n);
-		for (int_t i = 0; i < graph.n; ++i) {
-			base_coarse_to_uncoarse[i] = std::vector<int_t>(1, i);
-		}
-
-		std::vector<int_t> base_included_ew_in_vertex(graph.n, 0);
-
-		levels.emplace_back(
-		    std::move(base_uncoarse_to_coarse),
-		    std::move(base_coarse_to_uncoarse),
-		    graph,
-		    std::move(base_included_ew_in_vertex)
-		);
 		const int_t target_vertex_count = std::max<int_t>(
 		    2,
 		    std::min(ProgramConfig::coarsening_vertex_count_limit, graph.n / k / 2)
 		);
 
+		// The vertices of the original graph contain no edges
+		const std::vector<int_t> no_included_ew(graph.n, 0);
+
 		for (int_t i = 0; i < ProgramConfig::coarsening_iterations_limit; ++i) {
-			if (levels[i].coarsened_graph.n <= target_vertex_count) {
+			// The graph to contract now: the original one or the coarsest so far
+			const Graph& current = levels.empty() ? graph : levels.back().coarsened_graph;
+			const std::vector<int_t>& included_ew =
+			    levels.empty() ? no_included_ew : levels.back().included_ew_in_vertex;
+
+			if (current.n <= target_vertex_count) {
 				break;
 			}
 
-			CoarseLevel level = ContractMatching(levels[i], GetMatching(levels[i], k));
+			CoarseLevel level =
+			    ContractMatching(current, included_ew, GetMatching(current, included_ew, k));
 
 			if (level.coarsened_graph.n >
-			    ProgramConfig::coarsening_min_reduction_fraction * levels[i].coarsened_graph.n) {
+			    ProgramConfig::coarsening_min_reduction_fraction * current.n) {
 				break;
 			}
 

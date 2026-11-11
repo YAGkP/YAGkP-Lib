@@ -43,7 +43,8 @@ namespace yagkp::Partitioner {
 			{
 
 				std::vector<CoarseLevel> coarse_levels = Coarser::GetCoarseLevels(graph, k);
-				const Graph& coarsened_graph           = coarse_levels.back().coarsened_graph;
+				const Graph& coarsened_graph =
+				    coarse_levels.empty() ? graph : coarse_levels.back().coarsened_graph;
 
 				const fp_t W   = fp_t(graph.getSumOfVertexWeights());
 				const int_t C1 = GetHalfLimit(W, M, k1, k);
@@ -52,7 +53,7 @@ namespace yagkp::Partitioner {
 				std::vector<Part> initial_partition =
 				    Bipartitioner::GetGraphBipartition(coarsened_graph, C1, C2);
 				std::vector<Part> restored_partition =
-				    Uncoarser::RestorePartition(coarse_levels, initial_partition, C1, C2);
+				    Uncoarser::RestorePartition(graph, coarse_levels, initial_partition, C1, C2);
 
 				for (int_t i = 0; i < graph.n; ++i) {
 					if (restored_partition[i] == Part::First) {
