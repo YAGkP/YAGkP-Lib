@@ -13,8 +13,8 @@ namespace yagkp::Coarser {
 
 	namespace {
 
-		std::vector<int_t>& ThreadMarker(const int_t size) {
-			thread_local std::vector<int_t> marker;
+		vector<int_t>& ThreadMarker(const int_t size) {
+			thread_local vector<int_t> marker;
 			if (static_cast<int_t>(marker.size()) < size) {
 				marker.resize(size, -1);
 			}
@@ -24,8 +24,8 @@ namespace yagkp::Coarser {
 		// graph: the graph to contract; included_ew: edge weight inside each of its vertices
 		CoarseLevel ContractMatching(
 		    const UndirectedGraph& graph,
-		    const std::vector<int_t>& included_ew,
-		    const std::vector<int_t>& matching
+		    const vector<int_t>& included_ew,
+		    const vector<int_t>& matching
 		) {
 			const int_t n = graph.n;
 
@@ -35,7 +35,7 @@ namespace yagkp::Coarser {
 
 			// 1. Filling coarse vectors
 
-			std::vector<int_t> uncoarse_to_coarse(n, -1);
+			vector<int_t> uncoarse_to_coarse(n, -1);
 			int_t coarse_n = 0;
 			for (int_t curr_V = 0; curr_V < n; ++curr_V) {
 				if (matching[curr_V] == -1 || curr_V < matching[curr_V]) {
@@ -43,7 +43,7 @@ namespace yagkp::Coarser {
 				}
 			}
 
-			std::vector<std::vector<int_t>> coarse_to_uncoarse(coarse_n);
+			vector<vector<int_t>> coarse_to_uncoarse(coarse_n);
 #pragma omp taskloop default(shared) grainsize(grain_size) if (is_parallel)
 			for (int_t curr_V = 0; curr_V < n; ++curr_V) {
 				const int_t next_V = matching[curr_V];
@@ -64,7 +64,7 @@ namespace yagkp::Coarser {
 			coarsened_graph.total_vertex_weight = graph.total_vertex_weight;
 			coarsened_graph.vertex_weights.resize(coarse_n, 0);
 
-			std::vector<int_t> upper_xadj(coarse_n + 1, 0);
+			vector<int_t> upper_xadj(coarse_n + 1, 0);
 
 #pragma omp taskloop default(shared) grainsize(grain_size) if (is_parallel)
 			for (int_t c_curr_V = 0; c_curr_V < coarse_n; ++c_curr_V) {
@@ -79,14 +79,14 @@ namespace yagkp::Coarser {
 			}
 
 			// 3. Edges
-			std::vector<int_t> upper_adjncy(upper_xadj[coarse_n]);
-			std::vector<int_t> upper_edge_weights(upper_xadj[coarse_n]);
-			std::vector<int_t> degree(coarse_n, 0);
-			std::vector<int_t> internal_edge_weight(coarse_n, 0);
+			vector<int_t> upper_adjncy(upper_xadj[coarse_n]);
+			vector<int_t> upper_edge_weights(upper_xadj[coarse_n]);
+			vector<int_t> degree(coarse_n, 0);
+			vector<int_t> internal_edge_weight(coarse_n, 0);
 
 #pragma omp taskloop default(shared) grainsize(grain_size) if (is_parallel)
 			for (int_t c_curr_V = 0; c_curr_V < coarse_n; ++c_curr_V) {
-				std::vector<int_t>& marker = ThreadMarker(coarse_n);
+				vector<int_t>& marker = ThreadMarker(coarse_n);
 
 				const int_t begin = upper_xadj[c_curr_V];
 				int_t end         = begin;
@@ -129,7 +129,7 @@ namespace yagkp::Coarser {
 
 			// 4. included_ew_in_vertex
 
-			std::vector<int_t> included_ew_in_vertex(coarse_n, 0);
+			vector<int_t> included_ew_in_vertex(coarse_n, 0);
 
 #pragma omp taskloop default(shared) grainsize(grain_size) if (is_parallel)
 			for (int_t c_curr_V = 0; c_curr_V < coarse_n; ++c_curr_V) {
@@ -159,16 +159,16 @@ namespace yagkp::Coarser {
 		}
 
 		template <typename EdgeRating>
-		std::vector<int_t> GetGreedyMatching(
+		vector<int_t> GetGreedyMatching(
 		    const UndirectedGraph& graph,
 		    const int_t k,
 		    const EdgeRating& edge_rating
 		) {
 			const int_t n = graph.n;
 
-			std::vector<int_t> permutation = GetRandomPermutation(n);
+			vector<int_t> permutation = GetRandomPermutation(n);
 
-			std::vector<int_t> matching(n, -1);
+			vector<int_t> matching(n, -1);
 
 			int_t max_allowed_size = graph.total_vertex_weight;
 			if (ProgramConfig::coarsening_clusterization_prohibition) {
@@ -224,38 +224,40 @@ namespace yagkp::Coarser {
 			return matching;
 		}
 
-		std::vector<int_t> RandomMatching(const UndirectedGraph& graph, const int_t k) {
+		vector<int_t> RandomMatching(const UndirectedGraph& graph, const int_t k) {
 			return GetGreedyMatching(graph, k, [](int_t, int_t, int_t) { return 0; });
 		}
 
-		std::vector<int_t> LightEdgeMatching(const UndirectedGraph& graph, const int_t k) {
+		vector<int_t> LightEdgeMatching(const UndirectedGraph& graph, const int_t k) {
 			return GetGreedyMatching(graph, k, [](int_t, int_t, int_t w) { return -w; });
 		}
 
-		std::vector<int_t> HeavyEdgeMatching(const UndirectedGraph& graph, const int_t k) {
+		vector<int_t> HeavyEdgeMatching(const UndirectedGraph& graph, const int_t k) {
 			return GetGreedyMatching(graph, k, [](int_t, int_t, int_t w) { return w; });
 		}
 
-		std::vector<int_t> HeavyCliqueMatching(
+		vector<int_t> HeavyCliqueMatching(
 		    const UndirectedGraph& graph,
-		    const std::vector<int_t>& included_ew,
+		    const vector<int_t>& included_ew,
 		    const int_t k
 		) {
 			auto clique_density = [&graph,
 			                       &included_ew](int_t curr_V, int_t next_V, int_t w) -> fp_t {
 				int_t total_W = graph.vertex_weights[curr_V] + graph.vertex_weights[next_V];
 				return 2.0 * fp_t(w + included_ew[curr_V] + included_ew[next_V]) /
-				       fp_t(std::max(
-				           1ll,
-				           static_cast<long long>(total_W) * static_cast<long long>(total_W - 1)
-				       ));
+				       fp_t(
+				           std::max(
+				               1ll,
+				               static_cast<long long>(total_W) * static_cast<long long>(total_W - 1)
+				           )
+				       );
 			};
 			return GetGreedyMatching(graph, k, clique_density);
 		}
 
-		std::vector<int_t> GetMatching(
+		vector<int_t> GetMatching(
 		    const UndirectedGraph& graph,
-		    const std::vector<int_t>& included_ew,
+		    const vector<int_t>& included_ew,
 		    const int_t k
 		) {
 			using Method = ProgramConfig::CoarseningMethod;
@@ -278,8 +280,8 @@ namespace yagkp::Coarser {
 		}
 	} // namespace
 
-	std::vector<CoarseLevel> GetCoarseLevels(const UndirectedGraph& graph, const int_t k) {
-		std::vector<CoarseLevel> levels;
+	vector<CoarseLevel> GetCoarseLevels(const UndirectedGraph& graph, const int_t k) {
+		vector<CoarseLevel> levels;
 		levels.reserve(ProgramConfig::coarsening_iterations_limit);
 
 		const int_t target_vertex_count = std::max<int_t>(
@@ -288,12 +290,12 @@ namespace yagkp::Coarser {
 		);
 
 		// The vertices of the original graph contain no edges
-		const std::vector<int_t> no_included_ew(graph.n, 0);
+		const vector<int_t> no_included_ew(graph.n, 0);
 
 		for (int_t i = 0; i < ProgramConfig::coarsening_iterations_limit; ++i) {
 			// The graph to contract now: the original one or the coarsest so far
 			const UndirectedGraph& current = levels.empty() ? graph : levels.back().coarsened_graph;
-			const std::vector<int_t>& included_ew =
+			const vector<int_t>& included_ew =
 			    levels.empty() ? no_included_ew : levels.back().included_ew_in_vertex;
 
 			if (current.n <= target_vertex_count) {

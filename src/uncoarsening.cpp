@@ -48,7 +48,7 @@ namespace yagkp::Uncoarser {
 			return part == Part::First ? 0 : 1;
 		}
 
-		using GainQueues = std::array<BucketPriorityQueue, 2>;
+		using GainQueues = array<BucketPriorityQueue, 2>;
 
 		GainQueues GetGainQueues(
 		    const UndirectedGraph& graph,
@@ -65,8 +65,8 @@ namespace yagkp::Uncoarser {
 			return heaps;
 		}
 
-		std::array<int_t, 2> GetPartWeights(const UndirectedGraph& graph, const Bisection& partition) {
-			std::array<int_t, 2> weights = {0, 0};
+		array<int_t, 2> GetPartWeights(const UndirectedGraph& graph, const Bisection& partition) {
+			array<int_t, 2> weights = {0, 0};
 			for (int_t curr_V = 0; curr_V < graph.n; curr_V++) {
 				weights[Side(partition[curr_V])] += graph.vertex_weights[curr_V];
 			}
@@ -77,7 +77,7 @@ namespace yagkp::Uncoarser {
 		    int_t V,
 		    const UndirectedGraph& graph,
 		    const Bisection& partition,
-		    const std::vector<char>& blocked,
+		    const vector<char>& blocked,
 		    GainQueues& heaps
 		) {
 			for (auto [near_V, w]: graph[V]) {
@@ -104,8 +104,8 @@ namespace yagkp::Uncoarser {
 		    const int_t C1,
 		    const int_t C2
 		) {
-			const int_t n                = graph.n;
-			const std::array<int_t, 2> C = {C1, C2};
+			const int_t n           = graph.n;
+			const array<int_t, 2> C = {C1, C2};
 
 			int_t max_possible_gain = 0;
 			for (int_t curr_V = 0; curr_V < n; curr_V++) {
@@ -116,9 +116,9 @@ namespace yagkp::Uncoarser {
 				setmax(max_possible_gain, current_possible_gain);
 			}
 
-			std::array<int_t, 2> weights = GetPartWeights(graph, current_partition);
+			array<int_t, 2> weights = GetPartWeights(graph, current_partition);
 			if (weights[0] > C[0] || weights[1] > C[1]) {
-				std::vector<char> blocked(n, false);
+				vector<char> blocked(n, false);
 				GainQueues heaps = GetGainQueues(graph, current_partition, max_possible_gain);
 
 				for (int_t from = 0; from < 2; from++) {
@@ -146,11 +146,11 @@ namespace yagkp::Uncoarser {
 
 				weights = GetPartWeights(graph, current_partition);
 
-				std::vector<char> blocked(n, false);
+				vector<char> blocked(n, false);
 				GainQueues heaps = GetGainQueues(graph, current_partition, max_possible_gain);
 
-				std::vector<int_t> gains;
-				std::vector<int_t> vertices;
+				vector<int_t> gains;
+				vector<int_t> vertices;
 
 				int_t current_run_best_edgecut = current_edgecut;
 
@@ -281,7 +281,7 @@ namespace yagkp::Uncoarser {
 
 	Bisection RestorePartition(
 	    const UndirectedGraph& graph,
-	    const std::vector<CoarseLevel>& levels,
+	    const vector<CoarseLevel>& levels,
 	    Bisection partition,
 	    const int_t C1,
 	    const int_t C2

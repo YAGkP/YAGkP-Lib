@@ -38,11 +38,11 @@ namespace yagkp::Partitioner {
 
 			int_t k1 = k / 2;
 			int_t k2 = k - k1;
-			std::vector<int_t> first_part_vertices, second_part_vertices;
+			vector<int_t> first_part_vertices, second_part_vertices;
 
 			{
 
-				std::vector<CoarseLevel> coarse_levels = Coarser::GetCoarseLevels(graph, k);
+				vector<CoarseLevel> coarse_levels = Coarser::GetCoarseLevels(graph, k);
 				const UndirectedGraph& coarsened_graph =
 				    coarse_levels.empty() ? graph : coarse_levels.back().coarsened_graph;
 
@@ -99,7 +99,7 @@ namespace yagkp::Partitioner {
 		    (W + k - 1) / k
 		);
 
-		std::vector<Partition> partitions(ProgramConfig::runs);
+		vector<Partition> partitions(ProgramConfig::runs);
 
 #pragma omp parallel
 #pragma omp single

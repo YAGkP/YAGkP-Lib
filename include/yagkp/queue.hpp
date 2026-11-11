@@ -7,7 +7,7 @@
 
 namespace yagkp {
 	template <typename T> class Queue {
-		std::vector<T> data;
+		vector<T> data;
 		size_t head = 0;
 
 	  public:

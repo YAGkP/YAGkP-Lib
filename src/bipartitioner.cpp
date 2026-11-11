@@ -18,8 +18,8 @@ namespace yagkp::Bipartitioner {
 		) {
 			const int_t launches = ProgramConfig::bipartitioning_launches_count;
 
-			std::vector<Bisection> partitions(launches);
-			std::vector<int_t> edge_cuts(launches);
+			vector<Bisection> partitions(launches);
+			vector<int_t> edge_cuts(launches);
 
 #pragma omp taskloop default(none) grainsize(1)                                                    \
     shared(graph, bipartition_algorithm, partitions, edge_cuts) firstprivate(launches)
@@ -46,12 +46,12 @@ namespace yagkp::Bipartitioner {
 				const int_t n = graph.n;
 
 				Bisection partition(n, Part::Second);
-				std::vector<bool> visited(n, false);
+				vector<bool> visited(n, false);
 
 				Queue<int_t> q;
 				q.reserve(n / 2);
 
-				std::vector<int_t> order = GetRandomPermutation(n);
+				vector<int_t> order = GetRandomPermutation(n);
 
 				for (int_t start_V: order) {
 					if (graph.vertex_weights[start_V] <= C1) {
@@ -94,7 +94,7 @@ namespace yagkp::Bipartitioner {
 			const int_t n = graph.n;
 
 			int_t max_possible_gain = 0;
-			std::vector<int_t> sum_of_incident_edges_weights(n, 0);
+			vector<int_t> sum_of_incident_edges_weights(n, 0);
 			for (int_t curr_V = 0; curr_V < n; ++curr_V) {
 				int_t sum = 0;
 				for (auto [next_V, w]: graph[curr_V]) {
@@ -106,11 +106,11 @@ namespace yagkp::Bipartitioner {
 
 			return GetBestBipartition(graph, [&]() {
 				Bisection partition(n, Part::Second);
-				std::vector<bool> blocked(n, false);
+				vector<bool> blocked(n, false);
 				int_t current_weight = 0;
 
 				BucketPriorityQueue pq(n, -max_possible_gain, max_possible_gain);
-				std::vector<int_t> order = GetRandomPermutation(n);
+				vector<int_t> order = GetRandomPermutation(n);
 
 				auto touch = [&](int_t u, int_t w) {
 					if (blocked[u])

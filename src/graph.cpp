@@ -9,7 +9,11 @@ namespace yagkp {
 	UndirectedGraph::UndirectedGraph() {
 	}
 
-	UndirectedGraph::UndirectedGraph(const std::string& file_name, const std::string& format, bool ignore_eweights) {
+	UndirectedGraph::UndirectedGraph(
+	    const string& file_name,
+	    const string& format,
+	    bool ignore_eweights
+	) {
 		const spMtx<double> matrix(file_name.c_str(), format);
 
 		n = static_cast<int_t>(matrix.m);
@@ -48,10 +52,10 @@ namespace yagkp {
 		}
 	}
 
-	UndirectedGraph UndirectedGraph::selectSubgraph(const std::vector<int_t>& sub_vertices) const {
+	UndirectedGraph UndirectedGraph::selectSubgraph(const vector<int_t>& sub_vertices) const {
 		UndirectedGraph subgraph;
 
-		std::vector<int_t> original_to_sub(n, -1);
+		vector<int_t> original_to_sub(n, -1);
 		for (int_t i = 0; i < (int_t)sub_vertices.size(); ++i) {
 			original_to_sub[sub_vertices[i]] = i;
 		}
@@ -69,7 +73,7 @@ namespace yagkp {
 		    int_t{0}
 		);
 
-		std::vector<bool> is_exist(n, false);
+		vector<bool> is_exist(n, false);
 
 		for (int_t curr_V: sub_vertices) {
 			is_exist[curr_V] = true;

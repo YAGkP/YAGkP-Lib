@@ -20,10 +20,10 @@ namespace yagkp {
 
 		int_t total_vertex_weight = 0; // sum of vertex_weights
 
-		std::vector<int_t> adjncy;
-		std::vector<int_t> xadj;
-		std::vector<int_t> vertex_weights;
-		std::vector<int_t> edge_weights;
+		vector<int_t> adjncy;
+		vector<int_t> xadj;
+		vector<int_t> vertex_weights;
+		vector<int_t> edge_weights;
 
 		struct AdjacentIterator {
 			const UndirectedGraph& g;
@@ -63,11 +63,11 @@ namespace yagkp {
 
 		UndirectedGraph();
 		UndirectedGraph(
-		    const std::string& file_name,
-		    const std::string& format,
+		    const string& file_name,
+		    const string& format,
 		    bool ignore_eweights = false
 		);
 
-		UndirectedGraph selectSubgraph(const std::vector<int_t>& sub_vertices) const;
+		UndirectedGraph selectSubgraph(const vector<int_t>& sub_vertices) const;
 	};
 } // namespace yagkp

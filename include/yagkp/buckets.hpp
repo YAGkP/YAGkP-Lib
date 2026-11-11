@@ -19,15 +19,15 @@ namespace yagkp {
 
 		bool use_heap;
 
-		std::vector<int_t> buckets;
-		std::vector<Node> nodes;
-		std::vector<int_t> gain_value;
+		vector<int_t> buckets;
+		vector<Node> nodes;
+		vector<int_t> gain_value;
 		int_t min_gain;
 		int_t max_gain;
 		int_t n_nodes = 0;
 
-		std::vector<int_t> heap;
-		std::vector<int_t> pos;
+		vector<int_t> heap;
+		vector<int_t> pos;
 
 		bool HeapLess(int_t i, int_t j) const {
 			return gain_value[heap[i]] < gain_value[heap[j]];
@@ -68,7 +68,8 @@ namespace yagkp {
 		BucketPriorityQueue(int_t n, int_t min_g, int_t max_g)
 		    : use_heap(max_g - min_g + 1 > std::max(kMaxBuckets, kBucketsPerVertex * n)),
 		      buckets(use_heap ? 0 : max_g - min_g + 1, -1), nodes(use_heap ? 0 : n),
-		      gain_value(n, min_g - 1), min_gain(min_g), max_gain(min_g), pos(use_heap ? n : 0, -1) {
+		      gain_value(n, min_g - 1), min_gain(min_g), max_gain(min_g),
+		      pos(use_heap ? n : 0, -1) {
 			if (use_heap) {
 				heap.reserve(n);
 			}

@@ -19,7 +19,7 @@ namespace yagkp::Uncoarser {
 	 */
 	Bisection RestorePartition(
 	    const UndirectedGraph& graph,
-	    const std::vector<CoarseLevel>& levels,
+	    const vector<CoarseLevel>& levels,
 	    Bisection partition,
 	    const int_t C1,
 	    const int_t C2

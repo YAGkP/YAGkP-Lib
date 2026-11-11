@@ -31,12 +31,12 @@ namespace yagkp::PartitionMetrics {
 
 	namespace {
 		// Relative weight of every part: the fraction of the total vertex weight
-		std::vector<fp_t> GetBalances(
+		vector<fp_t> GetBalances(
 		    const UndirectedGraph& graph,
 		    const int_t k,
 		    const Partition& partition
 		) {
-			std::vector<fp_t> balances(k, 0.0);
+			vector<fp_t> balances(k, 0.0);
 
 			int_t total_W = graph.total_vertex_weight;
 
@@ -53,7 +53,7 @@ namespace yagkp::PartitionMetrics {
 	} // namespace
 
 	fp_t GetImbalance(const UndirectedGraph& graph, const int_t k, const Partition& partition) {
-		std::vector<fp_t> balances = GetBalances(graph, k, partition);
+		vector<fp_t> balances = GetBalances(graph, k, partition);
 
 		fp_t imbalance = balances[0] - 1.0 / k;
 		for (int_t curr_V = 1; curr_V < k; ++curr_V) {
@@ -64,8 +64,12 @@ namespace yagkp::PartitionMetrics {
 		return imbalance * k;
 	}
 
-	int_t GetMaxPartWeight(const UndirectedGraph& graph, const int_t k, const Partition& partition) {
-		std::vector<int_t> weights(k, 0);
+	int_t GetMaxPartWeight(
+	    const UndirectedGraph& graph,
+	    const int_t k,
+	    const Partition& partition
+	) {
+		vector<int_t> weights(k, 0);
 
 		for (int_t curr_V = 0; curr_V < graph.n; ++curr_V) {
 			weights[partition[curr_V]] += graph.vertex_weights[curr_V];

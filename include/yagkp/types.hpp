@@ -1,6 +1,8 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
+#include <string>
 #include <vector>
 
 namespace yagkp {
@@ -19,6 +21,10 @@ namespace yagkp {
 
 	// Partition into two parts: the side of every vertex
 	using Bisection = std::vector<Part>;
+
+	using std::vector;
+	using std::array;
+	using std::string;
 
 	template <typename T> void setmax(T& a, T b) {
 		if (b > a) {
