@@ -144,9 +144,6 @@ namespace yagkp::Uncoarser {
 
 			int_t current_edgecut = PartitionMetrics::GetEdgeCut(graph, current_partition);
 
-			std::vector<Part> best_partition = current_partition;
-			int_t best_edgecut               = current_edgecut;
-
 			for (int_t run_number = 0; run_number < ProgramConfig::uncoarsening_KernighanLin_runs;
 			     run_number++) {
 
@@ -254,14 +251,9 @@ namespace yagkp::Uncoarser {
 					current_edgecut += gain;
 					current_partition[curr_V] = GetOtherPart(current_partition[curr_V]);
 				}
-
-				if (current_edgecut < best_edgecut) {
-					best_edgecut   = current_edgecut;
-					best_partition = current_partition;
-				}
 			}
 
-			return best_partition;
+			return current_partition;
 		}
 
 		/**
