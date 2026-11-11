@@ -1,4 +1,0 @@
-# Настройки shellcheck для скриптов проекта
-# Пути в "# shellcheck source=..." считаются от каталога самого скрипта
-source-path=SCRIPTDIR
-external-sources=true
