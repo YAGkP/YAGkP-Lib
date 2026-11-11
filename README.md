@@ -17,4 +17,3 @@ bash build.sh --help
 - [The Graph Partitioning Archive](https://chriswalshaw.co.uk/partition/): the Walshaw benchmark graphs and the best known cuts
 - [SuiteSparse Matrix Collection](https://sparse.tamu.edu): sparse matrices and graphs
 - [Network Repository](https://networkrepository.com): graphs from many domains
-- [YAGkP-Graphs](https://github.com/YAGkP/YAGkP-Graphs): graph sets used to test and benchmark YAGkP

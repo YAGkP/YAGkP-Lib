@@ -10,7 +10,7 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/scripts/lib/common.sh"
 
 # Порядок сборки, если указано несколько режимов
-ALL_MODES=(debug release profile benchmark)
+ALL_MODES=(debug release profile)
 
 usage() {
 	cat <<'USAGE'
@@ -20,7 +20,6 @@ usage() {
   -d, --debug       ядро и приложения, отладочная сборка
   -r, --release     ядро, оптимизированная сборка
   -p, --profile     ядро, сборка для gprof
-  -b, --benchmark   ядро + METIS / KaHIP / SCOTCH с одинаковыми флагами
   -a, --all         все режимы
 
 Варианты (можно оба; по умолчанию --seq):
@@ -37,7 +36,7 @@ usage() {
   bash build.sh -r               # release
   bash build.sh -r -p --par      # release и profile, параллельная версия
   bash build.sh -a --seq --par   # всё, в обоих вариантах
-  bash build.sh -b -c -j 8
+  bash build.sh -r -c -j 8
 
 Результат: build/<режим>-<вариант>/
 Каждый режим можно собрать и напрямую: bash scripts/build/<режим>.sh --help
@@ -73,7 +72,6 @@ while [ $# -gt 0 ]; do
 		-d | --debug) choose_mode debug ;;
 		-r | --release) choose_mode release ;;
 		-p | --profile) choose_mode profile ;;
-		-b | --benchmark) choose_mode benchmark ;;
 		-a | --all) for m in "${ALL_MODES[@]}"; do choose_mode "$m"; done ;;
 		--seq) choose_variant seq ;;
 		--par) choose_variant par ;;

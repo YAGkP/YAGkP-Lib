@@ -14,21 +14,17 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)   # compile_commands.json для clangd / 
 # Цели
 #
 #   yagkp            ядро библиотеки, без внешних зависимостей
-#   yagkp_partition  CLI: разбиение только средствами YAGkP (apps/partition)
-#   yagkp_bench      CLI: любой алгоритм с замером метрик (apps/bench)
+#   yagkp_partition  CLI: разбиение графа из файла (apps/partition)
 #
 # Флаги компиляции здесь не задаются: их передают скрипты из scripts/
 # через CMAKE_BUILD_TYPE и CMAKE_<LANG>_FLAGS_<TYPE>. Единый источник
-# флагов для всех режимов и сторонних библиотек: scripts/lib/flags.sh
+# флагов для всех режимов: scripts/lib/flags.sh.
+#
+# Сравнение с METIS, KaHIP и SCOTCH — в отдельном репозитории YAGkP-Benchmark:
+# он подключает эту библиотеку через add_subdirectory с YAGKP_BUILD_APPS=OFF
 # =============================================================================
-option(YAGKP_PARALLEL        "Параллельная версия (OpenMP)"                          OFF)
-option(YAGKP_BUILD_APPS      "Собирать приложения из apps/"                          ON)
-option(YAGKP_BUILD_BENCHMARK "Собирать yagkp_bench (нужны сторонние библиотеки)"     OFF)
-
-# Сторонние библиотеки собирают scripts/deps/*.sh в deps/seq. Они однопоточные,
-# поэтому параллельная версия YAGkP использует ту же последовательную сборку
-set(YAGKP_DEPS_DIR "${PROJECT_SOURCE_DIR}/deps/seq" CACHE PATH
-     "Каталог с собранными сторонними библиотеками (для YAGKP_BUILD_BENCHMARK)")
+option(YAGKP_PARALLEL   "Параллельная версия (OpenMP)"   OFF)
+option(YAGKP_BUILD_APPS "Собирать приложения из apps/"   ON)
 
 # -----------------------------------------------------------------------------
 # Тип сборки. Profile: свой тип, его флаги приходят из scripts/lib/flags.sh
@@ -111,5 +107,4 @@ message(STATUS "  Compiler     ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VER
 message(STATUS "  CXX flags    ${_flags}")
 message(STATUS "  Parallel     ${YAGKP_PARALLEL}")
 message(STATUS "  Apps         ${YAGKP_BUILD_APPS}")
-message(STATUS "  Benchmark    ${YAGKP_BUILD_BENCHMARK}")
 message(STATUS "")

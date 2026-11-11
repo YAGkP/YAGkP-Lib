@@ -11,22 +11,20 @@ set -euo pipefail
 # shellcheck source=lib/common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
-ALL_MODES=(debug release profile benchmark)
+ALL_MODES=(debug release profile)
 
 usage() {
 	cat <<'USAGE'
 Использование: bash scripts/check_builds.sh [варианты] [опции]
 
-Собирает все режимы (debug, release, profile, benchmark) с нуля во временном
-каталоге и запускает собранные программы на тестовом графе.
+Собирает все режимы (debug, release, profile) с нуля во временном каталоге
+и запускает собранные программы на тестовом графе.
 
 Варианты (можно оба; по умолчанию --seq):
   --seq          последовательная версия
   --par          параллельная версия
 
 Опции:
-  --full         собирать с нуля и сторонние библиотеки (иначе используются
-                 уже собранные в deps/, если они актуальны)
   --keep         не удалять временный каталог (логи и сборки) после проверки
   -j N, -jN      число потоков сборки (по умолчанию все ядра)
   -h, --help     показать справку
@@ -39,7 +37,6 @@ USAGE
 # Аргументы
 # -----------------------------------------------------------------------------
 chosen_variants=" "
-full=0
 keep=0
 jobs="$(default_jobs)"
 
@@ -51,7 +48,6 @@ while [ $# -gt 0 ]; do
 				*) chosen_variants="$chosen_variants${1#--} " ;;
 			esac
 			;;
-		--full) full=1 ;;
 		--keep) keep=1 ;;
 		-j)
 			[ $# -ge 2 ] || die "-j: ожидается число"
@@ -95,9 +91,6 @@ cleanup() {
 trap cleanup EXIT
 
 export YAGKP_BUILD_ROOT="$WORK/build"
-if [ "$full" -eq 1 ]; then
-	export YAGKP_DEPS_ROOT="$WORK/deps"
-fi
 
 # -----------------------------------------------------------------------------
 # Тестовый граф: решётка 20x20 (400 вершин) в формате Matrix Market
@@ -142,18 +135,6 @@ check_profile() {
 	rm -rf "$dir"
 }
 
-# Бенчмарк: каждый алгоритм должен отработать
-check_bench() {
-	local algo
-	for algo in yagkp metis_kway metis_recursive kahip_fast scotch; do
-		"$1/apps/bench/yagkp_bench" --graph "$GRAPH" --k 4 --algo "$algo" \
-			--output "$WORK/bench" || {
-			echo "алгоритм $algo завершился с ошибкой"
-			return 1
-		}
-	done
-}
-
 # run_check <режим> <вариант>: сборка и проверки; 0 — успех
 run_check() {
 	local mode="$1" variant="$2"
@@ -164,7 +145,6 @@ run_check() {
 	case "$mode" in
 		debug | release) check_partition_app "$dir" ;;
 		profile) check_profile "$dir" ;;
-		benchmark) check_partition_app "$dir" && check_bench "$dir" ;;
 	esac
 }
 
@@ -172,11 +152,6 @@ run_check() {
 # Прогон
 # -----------------------------------------------------------------------------
 step "Проверка сборок во временном каталоге $WORK"
-if [ "$full" -eq 1 ]; then
-	info "Сторонние библиотеки собираются заново (--full)"
-else
-	info "Сторонние библиотеки: ${YAGKP_DEPS_ROOT#"$YAGKP_ROOT"/}/ (собираются, если неактуальны)"
-fi
 
 results=()
 failed=0

@@ -1,10 +1,5 @@
 /build/
-/deps/
-/data/*
-!/data/graphs_manager.sh
+/data/
 gmon.out
-compile_commands.json
-/benchmark/results/
-/benchmark/analysis/__pycache__
 /.vscode/
 patch

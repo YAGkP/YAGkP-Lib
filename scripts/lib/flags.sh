@@ -4,13 +4,11 @@
 # =============================================================================
 # Единый источник флагов компиляции для всех режимов сборки.
 #
-# Флаги нигде больше не задаются: ни в CMakeLists.txt, ни в скриптах
-# сторонних библиотек. Режим benchmark применяется и к YAGkP, и к METIS,
-# KaHIP, SCOTCH, чтобы сравнение шло в равных условиях.
+# Флаги нигде больше не задаются, в том числе в CMakeLists.txt.
 #
 # Использование:
 #   source "$YAGKP_ROOT/scripts/lib/flags.sh"
-#   load_flags release        # debug | release | profile | benchmark
+#   load_flags release        # debug | release | profile
 #   cmake ... "${CMAKE_FLAG_ARGS[@]}"
 #
 # Настройка через окружение:
@@ -23,7 +21,7 @@
 # Флаги по режимам
 # -----------------------------------------------------------------------------
 
-# Оптимизация, общая для release / profile / benchmark
+# Оптимизация, общая для release / profile
 _flags_optimize() {
 	local march="${YAGKP_MARCH-native}"
 	local flags="-O3 -DNDEBUG -funroll-loops"
@@ -52,7 +50,7 @@ load_flags() {
 			YAGKP_CFLAGS="-O0 -g3"
 			YAGKP_LDFLAGS=""
 			;;
-		release | benchmark)
+		release)
 			BUILD_TYPE="Release"
 			YAGKP_CFLAGS="$(_flags_optimize)"
 			YAGKP_LDFLAGS=""
@@ -65,7 +63,7 @@ load_flags() {
 			YAGKP_LDFLAGS="-pg"
 			;;
 		*)
-			die "load_flags: неизвестный режим '$mode' (debug | release | profile | benchmark)"
+			die "load_flags: неизвестный режим '$mode' (debug | release | profile)"
 			;;
 	esac
 

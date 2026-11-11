@@ -19,12 +19,11 @@ YAGKP_COMMON_SH=1
 YAGKP_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 export YAGKP_ROOT
 
-# Куда складываются сборки и сторонние библиотеки. По умолчанию build/ и deps/
-# в корне; переопределяются окружением (так scripts/check_builds.sh собирает
-# во временный каталог, не трогая рабочие сборки)
+# Куда складываются сборки. По умолчанию build/ в корне; переопределяется
+# окружением (так scripts/check_builds.sh собирает во временный каталог,
+# не трогая рабочие сборки)
 YAGKP_BUILD_ROOT="${YAGKP_BUILD_ROOT:-$YAGKP_ROOT/build}"
-YAGKP_DEPS_ROOT="${YAGKP_DEPS_ROOT:-$YAGKP_ROOT/deps}"
-export YAGKP_BUILD_ROOT YAGKP_DEPS_ROOT
+export YAGKP_BUILD_ROOT
 
 # -----------------------------------------------------------------------------
 # Вывод. Цвет только если stderr — терминал и не задан NO_COLOR
@@ -83,16 +82,6 @@ default_jobs() {
 		sysctl -n hw.ncpu
 	else
 		echo 4
-	fi
-}
-
-# init_submodule <путь>: инициализировать подмодуль, если он ещё пуст
-init_submodule() {
-	local path="$1"
-	if [ -z "$(ls -A "$YAGKP_ROOT/$path" 2>/dev/null)" ]; then
-		step "Инициализирую подмодуль $path"
-		git -C "$YAGKP_ROOT" submodule update --init "$path" ||
-			die "не удалось получить подмодуль $path"
 	fi
 }
 
