@@ -25,13 +25,13 @@ namespace yagkp::Partitioner {
 		// k: number of parts for this recursive call (k >= 1)  | 2
 		// offset: starting index for parts in this call        | 2
 		// returns: vector of part indices (offset..offset+k-1) | {2, 2, 3, 3}
-		std::vector<int_t> RecursivePartition(
+		Partition RecursivePartition(
 		    const Graph& graph,
 		    const int_t k,
 		    const int_t M,
 		    int_t offset
 		) {
-			std::vector<int_t> partition(graph.n, offset);
+			Partition partition(graph.n, offset);
 			if (k == 1) {
 				return partition;
 			}
@@ -50,9 +50,9 @@ namespace yagkp::Partitioner {
 				const int_t C1 = GetHalfLimit(W, M, k1, k);
 				const int_t C2 = GetHalfLimit(W, M, k2, k);
 
-				std::vector<Part> initial_partition =
+				Bisection initial_partition =
 				    Bipartitioner::GetGraphBipartition(coarsened_graph, C1, C2);
-				std::vector<Part> restored_partition =
+				Bisection restored_partition =
 				    Uncoarser::RestorePartition(graph, coarse_levels, initial_partition, C1, C2);
 
 				for (int_t i = 0; i < graph.n; ++i) {
@@ -68,8 +68,8 @@ namespace yagkp::Partitioner {
 			Graph first_graph  = graph.selectSubgraph(first_part_vertices);
 			Graph second_graph = graph.selectSubgraph(second_part_vertices);
 
-			std::vector<int_t> partition1;
-			std::vector<int_t> partition2;
+			Partition partition1;
+			Partition partition2;
 
 #pragma omp task default(none) shared(first_graph, partition1)                                     \
     firstprivate(k1, M, offset) if (first_graph.n >= ProgramConfig::parallel_task_min_vertices)
@@ -90,7 +90,7 @@ namespace yagkp::Partitioner {
 		}
 	} // namespace
 
-	std::vector<int_t> GetGraphKPartition(const Graph& graph, const int_t k) {
+	Partition GetGraphKPartition(const Graph& graph, const int_t k) {
 
 		const int_t W = graph.getSumOfVertexWeights();
 
@@ -99,7 +99,7 @@ namespace yagkp::Partitioner {
 		    (W + k - 1) / k
 		);
 
-		std::vector<std::vector<int_t>> partitions(ProgramConfig::runs);
+		std::vector<Partition> partitions(ProgramConfig::runs);
 
 #pragma omp parallel
 #pragma omp single
@@ -109,9 +109,9 @@ namespace yagkp::Partitioner {
 		}
 
 		int_t best_edgecut = std::numeric_limits<int_t>::max();
-		std::vector<int_t> best_partition;
+		Partition best_partition;
 
-		for (std::vector<int_t>& partition: partitions) {
+		for (Partition& partition: partitions) {
 			int_t edgecut = PartitionMetrics::GetEdgeCut(graph, partition);
 
 			if (edgecut < best_edgecut) {

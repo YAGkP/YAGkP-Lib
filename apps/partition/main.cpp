@@ -93,7 +93,7 @@ namespace {
 		return true;
 	}
 
-	void SavePartition(const std::string& path, const std::vector<yagkp::int_t>& partition) {
+	void SavePartition(const std::string& path, const yagkp::Partition& partition) {
 		std::ofstream out(path);
 		if (!out) {
 			throw std::runtime_error("не удалось открыть для записи: " + path);
@@ -132,9 +132,9 @@ int main(int argc, char* argv[]) {
 	try {
 		const Graph graph(opts.graph_path, "mtx", true);
 
-		const auto start                   = std::chrono::steady_clock::now();
-		const std::vector<int_t> partition = Partitioner::GetGraphKPartition(graph, opts.k);
-		const auto end                     = std::chrono::steady_clock::now();
+		const auto start          = std::chrono::steady_clock::now();
+		const Partition partition = Partitioner::GetGraphKPartition(graph, opts.k);
+		const auto end            = std::chrono::steady_clock::now();
 
 		const auto time_ms =
 		    std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();

@@ -17,10 +17,10 @@ namespace yagkp::Uncoarser {
 	 * @param C2 restriction on the 2nd part
 	 * @return partition of the original graph
 	 */
-	std::vector<Part> RestorePartition(
+	Bisection RestorePartition(
 	    const Graph& graph,
 	    const std::vector<CoarseLevel>& levels,
-	    std::vector<Part> partition,
+	    Bisection partition,
 	    const int_t C1,
 	    const int_t C2
 	);

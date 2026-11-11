@@ -17,12 +17,12 @@ namespace yagkp::Uncoarser {
 		 * @param coarse_partition partition of the coarse graph
 		 * @return partition of the previous coarsening level graph
 		 */
-		std::vector<Part> DirectMapping(
+		Bisection DirectMapping(
 		    const CoarseLevel& coarse_level,
-		    const std::vector<Part>& coarse_partition
+		    const Bisection& coarse_partition
 		) {
 			const int_t n = coarse_level.uncoarse_to_coarse.size();
-			std::vector<Part> prev_partition(n);
+			Bisection prev_partition(n);
 
 			for (int_t i = 0; i < n; i++) {
 				prev_partition[i] = coarse_partition[coarse_level.uncoarse_to_coarse[i]];
@@ -31,7 +31,7 @@ namespace yagkp::Uncoarser {
 			return prev_partition;
 		}
 
-		inline int_t GetGain(int_t V, const Graph& graph, const std::vector<Part>& partition) {
+		inline int_t GetGain(int_t V, const Graph& graph, const Bisection& partition) {
 			int_t gain = 0;
 			for (auto [next_V, w]: graph[V]) {
 				if (partition[V] != partition[next_V]) {
@@ -52,7 +52,7 @@ namespace yagkp::Uncoarser {
 
 		GainQueues GetGainQueues(
 		    const Graph& graph,
-		    const std::vector<Part>& partition,
+		    const Bisection& partition,
 		    const int_t max_possible_gain
 		) {
 			GainQueues heaps{
@@ -65,10 +65,7 @@ namespace yagkp::Uncoarser {
 			return heaps;
 		}
 
-		std::array<int_t, 2> GetPartWeights(
-		    const Graph& graph,
-		    const std::vector<Part>& partition
-		) {
+		std::array<int_t, 2> GetPartWeights(const Graph& graph, const Bisection& partition) {
 			std::array<int_t, 2> weights = {0, 0};
 			for (int_t curr_V = 0; curr_V < graph.n; curr_V++) {
 				weights[Side(partition[curr_V])] += graph.vertex_weights[curr_V];
@@ -79,7 +76,7 @@ namespace yagkp::Uncoarser {
 		inline void UpdateNearGains(
 		    int_t V,
 		    const Graph& graph,
-		    const std::vector<Part>& partition,
+		    const Bisection& partition,
 		    const std::vector<char>& blocked,
 		    GainQueues& heaps
 		) {
@@ -101,9 +98,9 @@ namespace yagkp::Uncoarser {
 		 * @param C2 restriction on the 2nd part
 		 * @return improved partition of the graph
 		 */
-		std::vector<Part> KernighanLinBlocking(
+		Bisection KernighanLinBlocking(
 		    const Graph& graph,
-		    std::vector<Part> current_partition,
+		    Bisection current_partition,
 		    const int_t C1,
 		    const int_t C2
 		) {
@@ -266,10 +263,10 @@ namespace yagkp::Uncoarser {
 		 * @param C2 restriction on the 2nd part
 		 * @return improved partition of the previous coarsening level graph
 		 */
-		std::vector<Part> KernighanLinBlocking(
+		Bisection KernighanLinBlocking(
 		    const Graph& previous_graph,
 		    const CoarseLevel& coarse_level,
-		    const std::vector<Part>& coarse_partition,
+		    const Bisection& coarse_partition,
 		    const int_t C1,
 		    const int_t C2
 		) {
@@ -282,10 +279,10 @@ namespace yagkp::Uncoarser {
 		}
 	} // namespace
 
-	std::vector<Part> RestorePartition(
+	Bisection RestorePartition(
 	    const Graph& graph,
 	    const std::vector<CoarseLevel>& levels,
-	    std::vector<Part> partition,
+	    Bisection partition,
 	    const int_t C1,
 	    const int_t C2
 	) {

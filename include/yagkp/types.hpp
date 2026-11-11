@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <vector>
 
 namespace yagkp {
 
@@ -10,7 +11,14 @@ namespace yagkp {
 	// Floating-point type
 	using fp_t = double;
 
+	// Side of a vertex in a bisection
 	enum class Part { First, Second };
+
+	// Partition into k parts: the part number {0, 1, ..., k-1} for every vertex
+	using Partition = std::vector<int_t>;
+
+	// Partition into two parts: the side of every vertex
+	using Bisection = std::vector<Part>;
 
 	template <typename T> void setmax(T& a, T b) {
 		if (b > a) {

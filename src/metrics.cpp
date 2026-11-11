@@ -1,7 +1,7 @@
 #include "yagkp/metrics.hpp"
 
 namespace yagkp::PartitionMetrics {
-	int_t GetEdgeCut(const Graph& graph, const std::vector<int_t>& partition) {
+	int_t GetEdgeCut(const Graph& graph, const Partition& partition) {
 		int_t edge_cut = 0;
 
 		for (int_t curr_V = 0; curr_V < graph.getVerticesCount(); ++curr_V) {
@@ -15,7 +15,7 @@ namespace yagkp::PartitionMetrics {
 		return edge_cut;
 	}
 
-	int_t GetEdgeCut(const Graph& graph, const std::vector<Part>& partition) {
+	int_t GetEdgeCut(const Graph& graph, const Bisection& partition) {
 		int_t edge_cut = 0;
 
 		for (int_t curr_V = 0; curr_V < graph.getVerticesCount(); ++curr_V) {
@@ -34,7 +34,7 @@ namespace yagkp::PartitionMetrics {
 		std::vector<fp_t> GetBalances(
 		    const Graph& graph,
 		    const int_t k,
-		    const std::vector<int_t>& partition
+		    const Partition& partition
 		) {
 			std::vector<fp_t> balances(k, 0.0);
 
@@ -52,7 +52,7 @@ namespace yagkp::PartitionMetrics {
 		}
 	} // namespace
 
-	fp_t GetImbalance(const Graph& graph, const int_t k, const std::vector<int_t>& partition) {
+	fp_t GetImbalance(const Graph& graph, const int_t k, const Partition& partition) {
 		std::vector<fp_t> balances = GetBalances(graph, k, partition);
 
 		fp_t imbalance = balances[0] - 1.0 / k;
@@ -64,7 +64,7 @@ namespace yagkp::PartitionMetrics {
 		return imbalance * k;
 	}
 
-	int_t GetMaxPartWeight(const Graph& graph, const int_t k, const std::vector<int_t>& partition) {
+	int_t GetMaxPartWeight(const Graph& graph, const int_t k, const Partition& partition) {
 		std::vector<int_t> weights(k, 0);
 
 		for (int_t curr_V = 0; curr_V < graph.getVerticesCount(); ++curr_V) {

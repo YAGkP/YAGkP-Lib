@@ -9,5 +9,5 @@ namespace yagkp::Partitioner {
 	// graph: input graph to partition          | graph
 	// k: number of parts (k >= 1)              | 3
 	// returns: vector of part indices (0..k-1) | {0, 0, 1, 1, 2}
-	std::vector<int_t> GetGraphKPartition(const Graph& graph, const int_t k);
+	Partition GetGraphKPartition(const Graph& graph, const int_t k);
 } // namespace yagkp::Partitioner

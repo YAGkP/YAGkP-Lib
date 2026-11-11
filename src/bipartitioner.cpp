@@ -12,13 +12,13 @@ namespace yagkp::Bipartitioner {
 
 	namespace {
 		template <typename BipartitionAlgorithm>
-		std::vector<Part> GetBestBipartition(
+		Bisection GetBestBipartition(
 		    const Graph& graph,
 		    const BipartitionAlgorithm& bipartition_algorithm
 		) {
 			const int_t launches = ProgramConfig::bipartitioning_launches_count;
 
-			std::vector<std::vector<Part>> partitions(launches);
+			std::vector<Bisection> partitions(launches);
 			std::vector<int_t> edge_cuts(launches);
 
 #pragma omp taskloop default(none) grainsize(1)                                                    \
@@ -37,7 +37,7 @@ namespace yagkp::Bipartitioner {
 			return std::move(partitions[best]);
 		}
 
-		std::vector<Part> GraphGrowingAlgorithm(
+		Bisection GraphGrowingAlgorithm(
 		    const Graph& graph,
 		    const int_t C1,
 		    [[maybe_unused]] const int_t C2
@@ -45,7 +45,7 @@ namespace yagkp::Bipartitioner {
 			return GetBestBipartition(graph, [&]() {
 				const int_t n = graph.n;
 
-				std::vector<Part> partition(n, Part::Second);
+				Bisection partition(n, Part::Second);
 				std::vector<bool> visited(n, false);
 
 				Queue<int_t> q;
@@ -86,7 +86,7 @@ namespace yagkp::Bipartitioner {
 			});
 		}
 
-		std::vector<Part> GreedyGraphGrowingAlgorithm(
+		Bisection GreedyGraphGrowingAlgorithm(
 		    const Graph& graph,
 		    const int_t C1,
 		    [[maybe_unused]] const int_t C2
@@ -105,7 +105,7 @@ namespace yagkp::Bipartitioner {
 			}
 
 			return GetBestBipartition(graph, [&]() {
-				std::vector<Part> partition(n, Part::Second);
+				Bisection partition(n, Part::Second);
 				std::vector<bool> blocked(n, false);
 				int_t current_weight = 0;
 
@@ -167,7 +167,7 @@ namespace yagkp::Bipartitioner {
 		}
 	} // namespace
 
-	std::vector<Part> GetGraphBipartition(const Graph& graph, const int_t C1, const int_t C2) {
+	Bisection GetGraphBipartition(const Graph& graph, const int_t C1, const int_t C2) {
 
 		using Method = ProgramConfig::BipartitioningMethod;
 
