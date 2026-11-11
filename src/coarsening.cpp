@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <numeric>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include "yagkp/config.hpp"
@@ -148,10 +149,10 @@ namespace yagkp::Coarser {
 			}
 
 			return CoarseLevel{
-			    uncoarse_to_coarse,
-			    coarse_to_uncoarse,
-			    coarsened_graph,
-			    included_ew_in_vertex
+			    std::move(uncoarse_to_coarse),
+			    std::move(coarse_to_uncoarse),
+			    std::move(coarsened_graph),
+			    std::move(included_ew_in_vertex)
 			};
 		}
 
