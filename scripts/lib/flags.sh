@@ -47,7 +47,9 @@ load_flags() {
 	case "$mode" in
 		debug)
 			BUILD_TYPE="Debug"
-			YAGKP_CFLAGS="-O0 -g3"
+			# _GLIBCXX_ASSERTIONS: the standard library checks indices of
+			# operator[], front(), back() and the like, and aborts on an error
+			YAGKP_CFLAGS="-O0 -g3 -D_GLIBCXX_ASSERTIONS"
 			YAGKP_LDFLAGS=""
 			;;
 		release)

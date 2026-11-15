@@ -115,7 +115,6 @@ namespace yagkp {
 		    : links(n), gains(n, GAIN_FILLER), min_gain(min_g) {
 				
 			YAGKP_ASSERT(n > 0, "BucketPriorityQueue for an empty graph");
-			YAGKP_ASSERT(min_g <= max_g, "empty range of gains");
 
 			const int_t range = max_g - min_g;
 			if (range >= EXACT_BUCKETS_MIN_LIMIT) {
@@ -209,10 +208,6 @@ namespace yagkp {
 		 * @return whether the vertex is in the queue
 		 */
 		bool contains(const int_t vertex_id) const noexcept {
-			YAGKP_ASSERT(
-			    0 <= vertex_id && vertex_id < static_cast<int_t>(gains.size()),
-			    "vertex out of range of BucketPriorityQueue"
-			);
 			return gains[vertex_id] != GAIN_FILLER;
 		}
 
