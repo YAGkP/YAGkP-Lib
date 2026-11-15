@@ -29,3 +29,8 @@
 		}                                                                                          \
 	} while (false)
 #endif
+
+// YAGKP_STATIC_ASSERT(condition, message): checks a condition at compile time, in every build.
+// The same as static_assert. Variadic, so a condition may contain commas, e.g.
+// YAGKP_STATIC_ASSERT(std::is_same_v<A, B>, "message")
+#define YAGKP_STATIC_ASSERT(...) static_assert(__VA_ARGS__)

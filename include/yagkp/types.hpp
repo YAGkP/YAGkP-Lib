@@ -3,12 +3,20 @@
 #include <array>
 #include <cstdint>
 #include <string>
+#include <type_traits>
 #include <vector>
+
+#include "yagkp/assert.hpp"
 
 namespace yagkp {
 
 	// Signed integer type
 	using int_t = std::int64_t;
+
+	YAGKP_STATIC_ASSERT(
+	    std::is_signed_v<int_t>,
+	    "gains and differences of weights can be negative"
+	);
 
 	// Floating-point type
 	using fp_t = double;
