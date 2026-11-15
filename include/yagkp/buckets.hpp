@@ -1,218 +1,237 @@
 #pragma once
 
-#include <algorithm>
-#include <stdexcept>
+#include <limits>
 #include <utility>
 #include <vector>
 
+#include "yagkp/assert.hpp"
 #include "yagkp/types.hpp"
 
 namespace yagkp {
+	/**
+	 * @brief Max-priority queue of vertices by gain, built on buckets.
+	 *
+	 * Every bucket is a list of vertices whose gains fall into one range of values. extract()
+	 * takes a vertex from the highest bucket that is not empty.
+	 *
+	 * For small gains every bucket holds one gain value, and extract() returns a vertex with the
+	 * largest gain. For large gains every bucket holds 2^shift neighbouring values, with at most
+	 * MAX_BUCKETS_PER_VERTEX buckets per vertex, so extract() returns some vertex of the highest
+	 * bucket. Gains are always stored and returned exactly.
+	 *
+	 * Inside one bucket, the vertex that was inserted or changed last comes first.
+	 */
 	class BucketPriorityQueue {
-		struct Node {
-			int_t prev = -1;
-			int_t next = -1;
+	  protected:
+		/**
+		 * @brief Neighbours of a vertex in the list of its bucket, -1 if none
+		 */
+		struct BucketLinks {
+			int_t prev_vertex_id = -1;
+			int_t next_vertex_id = -1;
 		};
 
-		static constexpr int_t kMaxBuckets       = int_t{1} << 22;
-		static constexpr int_t kBucketsPerVertex = 8;
+		/**
+		 * @brief Index of the bucket that holds the gain
+		 *
+		 * @param gain gain in [min_g, max_g]
+		 * @return index of the bucket
+		 */
+		int_t get_bucket_idx(const int_t gain) const noexcept {
+			const int_t bucket_idx = (gain - min_gain) >> shift;
 
-		bool use_heap;
+			YAGKP_ASSERT(
+			    gain >= min_gain && bucket_idx < static_cast<int_t>(bucket_heads.size()),
+			    "gain out of the range given to BucketPriorityQueue"
+			);
 
-		vector<int_t> buckets;
-		vector<Node> nodes;
-		vector<int_t> gain_value;
-		int_t min_gain;
-		int_t max_gain;
-		int_t n_nodes = 0;
-
-		vector<int_t> heap;
-		vector<int_t> pos;
-
-		bool HeapLess(int_t i, int_t j) const {
-			return gain_value[heap[i]] < gain_value[heap[j]];
+			return bucket_idx;
 		}
 
-		void HeapSwap(int_t i, int_t j) {
-			std::swap(heap[i], heap[j]);
-			pos[heap[i]] = i;
-			pos[heap[j]] = j;
+		/**
+		 * @brief Puts the vertex at the head of the list of the bucket
+		 *
+		 * @param bucket_idx index of the bucket
+		 * @param vertex_id the vertex; it must not be in any bucket
+		 */
+		void push_front(const int_t bucket_idx, const int_t vertex_id) noexcept {
+			links[vertex_id].next_vertex_id = bucket_heads[bucket_idx];
+			links[vertex_id].prev_vertex_id = -1;
+			if (bucket_heads[bucket_idx] != -1) {
+				links[bucket_heads[bucket_idx]].prev_vertex_id = vertex_id;
+			}
+			bucket_heads[bucket_idx] = vertex_id;
 		}
 
-		void SiftUp(int_t i) {
-			while (i > 0 && HeapLess((i - 1) / 2, i)) {
-				HeapSwap(i, (i - 1) / 2);
-				i = (i - 1) / 2;
+		/**
+		 * @brief Removes the vertex from the list of its bucket
+		 *
+		 * @param bucket_idx index of the bucket the vertex is in
+		 * @param vertex_id the vertex
+		 */
+		void unlink(const int_t bucket_idx, const int_t vertex_id) noexcept {
+			const int_t prev_vertex_id = links[vertex_id].prev_vertex_id;
+			const int_t next_vertex_id = links[vertex_id].next_vertex_id;
+
+			YAGKP_ASSERT(
+			    prev_vertex_id != -1 || bucket_heads[bucket_idx] == vertex_id,
+			    "the vertex is not in this bucket"
+			);
+
+			if (prev_vertex_id != -1) {
+				links[prev_vertex_id].next_vertex_id = next_vertex_id;
+			}
+			else {
+				bucket_heads[bucket_idx] = next_vertex_id;
+			}
+			if (next_vertex_id != -1) {
+				links[next_vertex_id].prev_vertex_id = prev_vertex_id;
 			}
 		}
 
-		void SiftDown(int_t i) {
-			const int_t size = static_cast<int_t>(heap.size());
-			while (true) {
-				int_t largest = i;
-				for (int_t child = 2 * i + 1; child <= 2 * i + 2 && child < size; child++) {
-					if (HeapLess(largest, child)) {
-						largest = child;
-					}
-				}
-				if (largest == i) {
-					return;
-				}
-				HeapSwap(i, largest);
-				i = largest;
+		/**
+		 * @brief Moves top_bucket_idx down to the highest bucket that is not empty, or to 0 if the
+		 * queue is empty
+		 */
+		void lower_top_bucket() noexcept {
+			while (top_bucket_idx > 0 && bucket_heads[top_bucket_idx] == -1) {
+				top_bucket_idx--;
 			}
 		}
 
 	  public:
-		// n - amount of vertices in the graph, [min_g, max_g] - gains range
-		BucketPriorityQueue(int_t n, int_t min_g, int_t max_g)
-		    : use_heap(max_g - min_g + 1 > std::max(kMaxBuckets, kBucketsPerVertex * n)),
-		      buckets(use_heap ? 0 : max_g - min_g + 1, -1), nodes(use_heap ? 0 : n),
-		      gain_value(n, min_g - 1), min_gain(min_g), max_gain(min_g),
-		      pos(use_heap ? n : 0, -1) {
-			if (use_heap) {
-				heap.reserve(n);
+		/**
+		 * @brief Creates an empty queue
+		 *
+		 * If the range of gains is small, every bucket holds one gain value. Otherwise every bucket
+		 * holds 2^shift values, with the smallest shift that gives at most MAX_BUCKETS_PER_VERTEX
+		 * buckets per vertex.
+		 *
+		 * @param n number of vertices in the graph, vertices are 0..n-1
+		 * @param min_g the smallest possible gain
+		 * @param max_g the largest possible gain
+		 */
+		BucketPriorityQueue(const int_t n, const int_t min_g, const int_t max_g)
+		    : links(n), gains(n, GAIN_FILLER), min_gain(min_g) {
+				
+			YAGKP_ASSERT(n > 0, "BucketPriorityQueue for an empty graph");
+			YAGKP_ASSERT(min_g <= max_g, "empty range of gains");
+
+			const int_t range = max_g - min_g;
+			if (range >= EXACT_BUCKETS_MIN_LIMIT) {
+				while ((range >> shift) >= MAX_BUCKETS_PER_VERTEX * n) {
+					++shift;
+				}
 			}
+			bucket_heads.assign((range >> shift) + 1, -1);
 		}
 
-		void insert(int_t gain, int_t id) {
+		/**
+		 * @brief Adds a vertex that is not in the queue yet
+		 *
+		 * @param gain gain of the vertex, in [min_g, max_g]
+		 * @param vertex_id the vertex
+		 */
+		void insert(const int_t gain, const int_t vertex_id) noexcept {
+			YAGKP_ASSERT(!contains(vertex_id), "vertex already present in BucketPriorityQueue");
 
-			if (gain_value[id] >= min_gain) {
-				throw std::logic_error("BucketPriorityQueue: id already present");
-			}
-
-			if (use_heap) {
-				gain_value[id] = gain;
-				pos[id]        = static_cast<int_t>(heap.size());
-				heap.push_back(id);
-				SiftUp(pos[id]);
-				n_nodes++;
-				return;
-			}
-
-			int_t idx      = gain - min_gain;
-			gain_value[id] = gain;
-
-			nodes[id].next = buckets[idx];
-			nodes[id].prev = -1;
-			if (buckets[idx] != -1) {
-				nodes[buckets[idx]].prev = id;
-			}
-			buckets[idx] = id;
-
-			if (max_gain < gain) {
-				max_gain = gain;
-			}
-			n_nodes++;
+			const int_t bucket_idx = get_bucket_idx(gain);
+			gains[vertex_id]       = gain;
+			push_front(bucket_idx, vertex_id);
+			setmax(top_bucket_idx, bucket_idx);
+			n_vertices++;
 		}
 
-		void add(int_t delta, int_t id) {
-			if (gain_value[id] < min_gain) {
+		/**
+		 * @brief Changes the gain of the vertex; does nothing if the vertex is not in the queue
+		 *
+		 * @param delta change of the gain; the new gain must stay in [min_g, max_g]
+		 * @param vertex_id the vertex
+		 */
+		void add(const int_t delta, const int_t vertex_id) noexcept {
+			if (!contains(vertex_id)) {
 				return;
 			}
 
-			if (use_heap) {
-				gain_value[id] += delta;
-				if (delta > 0) {
-					SiftUp(pos[id]);
-				}
-				else {
-					SiftDown(pos[id]);
-				}
-				return;
-			}
+			const int_t old_bucket_idx = get_bucket_idx(gains[vertex_id]);
+			gains[vertex_id] += delta;
+			const int_t new_bucket_idx = get_bucket_idx(gains[vertex_id]);
 
-			int_t old_gain = gain_value[id];
-			int_t old_idx  = old_gain - min_gain;
+			unlink(old_bucket_idx, vertex_id);
+			push_front(new_bucket_idx, vertex_id);
 
-			if (nodes[id].prev != -1) {
-				nodes[nodes[id].prev].next = nodes[id].next;
+			if (new_bucket_idx > top_bucket_idx) {
+				top_bucket_idx = new_bucket_idx;
 			}
 			else {
-				buckets[old_idx] = nodes[id].next;
-			}
-
-			if (nodes[id].next != -1) {
-				nodes[nodes[id].next].prev = nodes[id].prev;
-			}
-
-			int_t new_gain = old_gain + delta;
-			int_t new_idx  = new_gain - min_gain;
-			gain_value[id] = new_gain;
-
-			nodes[id].next = buckets[new_idx];
-			nodes[id].prev = -1;
-			if (buckets[new_idx] != -1) {
-				nodes[buckets[new_idx]].prev = id;
-			}
-			buckets[new_idx] = id;
-
-			if (new_gain > max_gain) {
-				max_gain = new_gain;
-			}
-			else if (old_gain == max_gain && buckets[old_idx] == -1) {
-				while (buckets[max_gain - min_gain] == -1) {
-					max_gain--;
-				}
+				lower_top_bucket();
 			}
 		}
 
-		std::pair<int_t, int_t> extract() { // max
-			if (use_heap) {
-				const int_t id   = heap[0];
-				const int_t gain = gain_value[id];
-				HeapSwap(0, static_cast<int_t>(heap.size()) - 1);
-				heap.pop_back();
-				pos[id]        = -1;
-				gain_value[id] = min_gain - 1;
-				n_nodes--;
-				if (!heap.empty()) {
-					SiftDown(0);
-				}
-				return {gain, id};
-			}
+		/**
+		 * @brief Removes the first vertex of the top bucket from the queue
+		 *
+		 * @return {gain, vertex}; the queue must not be empty
+		 */
+		std::pair<int_t, int_t> extract() noexcept {
+			const auto [gain, vertex_id] = top();
 
-			int_t idx  = max_gain - min_gain;
-			int_t id   = buckets[idx];
-			int_t gain = gain_value[id];
+			unlink(top_bucket_idx, vertex_id);
+			gains[vertex_id] = GAIN_FILLER;
+			n_vertices--;
+			lower_top_bucket();
 
-			buckets[idx] = nodes[id].next;
-			if (nodes[id].next != -1) {
-				nodes[nodes[id].next].prev = -1;
-			}
-
-			gain_value[id] = min_gain - 1;
-			n_nodes--;
-
-			if (n_nodes > 0) {
-				while (buckets[max_gain - min_gain] == -1) {
-					max_gain--;
-				}
-			}
-			else {
-				max_gain = min_gain;
-			}
-
-			return {gain, id};
+			return {gain, vertex_id};
 		}
 
-		std::pair<int_t, int_t> top() const {
-			if (empty())
-				throw std::runtime_error("Empty BucketPriorityQueue");
-			if (use_heap) {
-				return {gain_value[heap[0]], heap[0]};
-			}
-			int_t idx = max_gain - min_gain;
-			int_t id  = buckets[idx];
-			return {gain_value[id], id};
+		/**
+		 * @brief The first vertex of the top bucket, without removing it
+		 *
+		 * @return {gain, vertex}; the queue must not be empty
+		 */
+		std::pair<int_t, int_t> top() const noexcept {
+			YAGKP_ASSERT(!empty(), "top() can't be used with empty BucketPriorityQueue");
+
+			const int_t vertex_id = bucket_heads[top_bucket_idx];
+			YAGKP_ASSERT(vertex_id != -1, "top_bucket_idx points to an empty bucket");
+			return {gains[vertex_id], vertex_id};
 		}
 
+		/**
+		 * @return whether the queue has no vertices
+		 */
 		bool empty() const noexcept {
-			return n_nodes == 0;
+			return n_vertices == 0;
 		}
 
-		bool contains(int_t id) const {
-			return gain_value[id] >= min_gain;
+		/**
+		 * @param vertex_id the vertex
+		 * @return whether the vertex is in the queue
+		 */
+		bool contains(const int_t vertex_id) const noexcept {
+			YAGKP_ASSERT(
+			    0 <= vertex_id && vertex_id < static_cast<int_t>(gains.size()),
+			    "vertex out of range of BucketPriorityQueue"
+			);
+			return gains[vertex_id] != GAIN_FILLER;
 		}
+
+	  protected:
+		// Every bucket holds one gain value if the range of gains is less than
+		// max(EXACT_BUCKETS_MIN_LIMIT, MAX_BUCKETS_PER_VERTEX * n)
+		static constexpr int_t EXACT_BUCKETS_MIN_LIMIT = int_t{1} << 22;
+		static constexpr int_t MAX_BUCKETS_PER_VERTEX  = 8;
+
+		// Gain of a vertex that is not in the queue
+		static constexpr int_t GAIN_FILLER = std::numeric_limits<int_t>::lowest();
+
+		vector<int_t> bucket_heads; // first vertex of every bucket, -1 if empty
+		vector<BucketLinks> links;  // links[vertex_id]: neighbours in the list of its bucket
+		vector<int_t> gains;        // exact gain of every vertex, GAIN_FILLER if absent
+
+		int_t min_gain;
+		int_t shift          = 0; // a bucket holds 2^shift gain values
+		int_t top_bucket_idx = 0; // the highest bucket that is not empty
+		int_t n_vertices     = 0; // number of vertices in the queue
 	};
 } // namespace yagkp

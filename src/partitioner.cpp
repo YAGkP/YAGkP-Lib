@@ -4,6 +4,7 @@
 #include <cmath>
 #include <limits>
 
+#include "yagkp/assert.hpp"
 #include "yagkp/bipartitioner.hpp"
 #include "yagkp/coarsening.hpp"
 #include "yagkp/config.hpp"
@@ -91,6 +92,7 @@ namespace yagkp::Partitioner {
 	} // namespace
 
 	Partition GetGraphKPartition(const UndirectedGraph& graph, const int_t k) {
+		YAGKP_ASSERT(graph.n >= k, "number of vertices in the graph shouldn't be less than k");
 
 		const int_t W = graph.total_vertex_weight;
 
