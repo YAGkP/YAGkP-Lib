@@ -102,8 +102,8 @@ namespace {
 			return bench::RunKaHIP(
 			    k,
 			    eps,
-			    g.xadj,
-			    g.adjncy,
+			    g.neighbours.row_offsets(),
+			    g.neighbours.value_buffer(),
 			    g.vertex_weights,
 			    g.edge_weights,
 			    algo.substr(6)
@@ -113,8 +113,8 @@ namespace {
 			return bench::RunMETIS(
 			    k,
 			    eps,
-			    g.xadj,
-			    g.adjncy,
+			    g.neighbours.row_offsets(),
+			    g.neighbours.value_buffer(),
 			    g.vertex_weights,
 			    g.edge_weights,
 			    algo.substr(6)
@@ -124,8 +124,8 @@ namespace {
 			return bench::RunSCOTCH(
 			    k,
 			    eps,
-			    g.xadj,
-			    g.adjncy,
+			    g.neighbours.row_offsets(),
+			    g.neighbours.value_buffer(),
 			    g.vertex_weights,
 			    g.edge_weights,
 			    threads
@@ -135,8 +135,8 @@ namespace {
 			return bench::RunMtMETIS(
 			    k,
 			    eps,
-			    g.xadj,
-			    g.adjncy,
+			    g.neighbours.row_offsets(),
+			    g.neighbours.value_buffer(),
 			    g.vertex_weights,
 			    g.edge_weights,
 			    algo.substr(8),
@@ -147,8 +147,8 @@ namespace {
 			return bench::RunKaMinPar(
 			    k,
 			    eps,
-			    g.xadj,
-			    g.adjncy,
+			    g.neighbours.row_offsets(),
+			    g.neighbours.value_buffer(),
 			    g.vertex_weights,
 			    g.edge_weights,
 			    algo.substr(9),

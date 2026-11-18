@@ -58,7 +58,7 @@ namespace yagkp::Coarser {
 			for (int_t c_curr_V = 0; c_curr_V < coarse_n; ++c_curr_V) {
 				for (int_t u_curr_V: coarse_to_uncoarse[c_curr_V]) {
 					coarsened_graph.vertex_weights[c_curr_V] += graph.vertex_weights[u_curr_V];
-					upper_xadj[c_curr_V + 1] += graph.xadj[u_curr_V + 1] - graph.xadj[u_curr_V];
+					upper_xadj[c_curr_V + 1] += graph.neighbours[u_curr_V].size();
 				}
 			}
 
@@ -104,16 +104,10 @@ namespace yagkp::Coarser {
 				degree[c_curr_V] = end - begin;
 			}
 
-			coarsened_graph.xadj.resize(coarse_n + 1);
-			coarsened_graph.xadj[0] = 0;
-			for (int_t c_curr_V = 0; c_curr_V < coarse_n; ++c_curr_V) {
-				coarsened_graph.xadj[c_curr_V + 1] =
-				    coarsened_graph.xadj[c_curr_V] + degree[c_curr_V];
-			}
-
-			coarsened_graph.m = coarsened_graph.xadj[coarse_n] / 2;
-			coarsened_graph.adjncy.resize(coarsened_graph.xadj[coarse_n]);
-			coarsened_graph.edge_weights.resize(coarsened_graph.xadj[coarse_n]);
+			coarsened_graph.neighbours = CRS<int_t>::from_row_sizes(degree);
+			const int_t entries = coarsened_graph.neighbours.value_count();
+			coarsened_graph.m = entries / 2;
+			coarsened_graph.edge_weights.resize(entries);
 
 			// 4. included_ew_in_vertex
 
@@ -124,12 +118,12 @@ namespace yagkp::Coarser {
 				std::copy_n(
 				    upper_adjncy.begin() + upper_xadj[c_curr_V],
 				    degree[c_curr_V],
-				    coarsened_graph.adjncy.begin() + coarsened_graph.xadj[c_curr_V]
+				    coarsened_graph.neighbours[c_curr_V].begin()
 				);
 				std::copy_n(
 				    upper_edge_weights.begin() + upper_xadj[c_curr_V],
 				    degree[c_curr_V],
-				    coarsened_graph.edge_weights.begin() + coarsened_graph.xadj[c_curr_V]
+				    coarsened_graph.edge_weights.begin() + coarsened_graph.neighbours.row_offsets()[c_curr_V]
 				);
 
 				for (int_t u_curr_V: coarse_to_uncoarse[c_curr_V]) {

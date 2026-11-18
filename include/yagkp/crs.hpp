@@ -201,6 +201,16 @@ namespace yagkp {
 			return std::views::transform(indices, [this](int_t row) { return (*this)[row]; });
 		}
 
+		/** @brief Row boundaries for consumers of the raw CSR arrays */
+		const vector<int_t>& row_offsets() const noexcept {
+			return offsets;
+		}
+
+		/** @brief Contiguous value buffer for consumers of the raw CSR arrays */
+		const vector<T>& value_buffer() const noexcept {
+			return values;
+		}
+
 	private:
 		void swap(CRS& other) noexcept {
 			offsets.swap(other.offsets);

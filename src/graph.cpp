@@ -21,14 +21,12 @@ namespace yagkp {
 		const int_t entries = static_cast<int_t>(matrix.nz);
 		m                   = entries / 2;
 
-		adjncy.resize(entries);
-		for (int_t i = 0; i < entries; ++i) {
-			adjncy[i] = static_cast<int_t>(matrix.Col[i]);
-		}
-
-		xadj.resize(n + 1);
-		for (int_t i = 0; i < n + 1; ++i) {
-			xadj[i] = static_cast<int_t>(matrix.Rst[i]);
+		neighbours.reserve(n, entries);
+		for (int_t vertex = 0; vertex < n; ++vertex) {
+			neighbours.append_row();
+			for (int_t pos = matrix.Rst[vertex]; pos < matrix.Rst[vertex + 1]; ++pos) {
+				neighbours.push_back(matrix.Col[pos]);
+			}
 		}
 
 		vertex_weights.resize(n);
@@ -73,50 +71,17 @@ namespace yagkp {
 		    int_t{0}
 		);
 
-		vector<bool> is_exist(n, false);
-
-		for (int_t curr_V: sub_vertices) {
-			is_exist[curr_V] = true;
-		}
-
-		int_t entries = 0;
-		for (int_t curr_V: sub_vertices) {
-			for (int_t i = xadj[curr_V]; i < xadj[curr_V + 1]; ++i) {
-				if (is_exist[adjncy[i]]) {
-					++entries;
+		for (int_t vertex: sub_vertices) {
+			subgraph.neighbours.append_row();
+			for (auto [neighbour, weight]: (*this)[vertex]) {
+				const int_t sub_vertex = original_to_sub[neighbour];
+				if (sub_vertex != -1) {
+					subgraph.neighbours.push_back(sub_vertex);
+					subgraph.edge_weights.push_back(weight);
 				}
 			}
 		}
-		subgraph.m = entries / 2;
-
-		subgraph.adjncy.resize(entries);
-		subgraph.edge_weights.resize(entries);
-
-		subgraph.xadj.resize(subgraph.n + 1);
-		subgraph.xadj[0] = 0;
-
-		int_t edge_pos = 0;
-
-		for (int_t i = 0; i < (int_t)sub_vertices.size(); ++i) {
-			int_t curr_V         = sub_vertices[i];
-			subgraph.xadj[i + 1] = subgraph.xadj[i];
-			for (int_t k = xadj[curr_V]; k < xadj[curr_V + 1]; ++k) {
-				int_t next_V = adjncy[k];
-
-				if (is_exist[next_V]) {
-
-					int_t j = original_to_sub[next_V];
-
-					int_t weight = edge_weights[k];
-
-					++subgraph.xadj[i + 1];
-					subgraph.adjncy[edge_pos]       = j;
-					subgraph.edge_weights[edge_pos] = weight;
-
-					++edge_pos;
-				}
-			}
-		}
+		subgraph.m = subgraph.neighbours.value_count() / 2;
 
 		return subgraph;
 	}
