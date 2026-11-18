@@ -20,8 +20,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)   # compile_commands.json для clangd / 
 # через CMAKE_BUILD_TYPE и CMAKE_<LANG>_FLAGS_<TYPE>. Единый источник
 # флагов для всех режимов: scripts/lib/flags.sh.
 #
-# Сравнение с METIS, KaHIP и SCOTCH — в отдельном репозитории YAGkP-Benchmark:
-# он подключает эту библиотеку через add_subdirectory с YAGKP_BUILD_APPS=OFF
 # =============================================================================
 option(YAGKP_PARALLEL   "Параллельная версия (OpenMP)"   OFF)
 option(YAGKP_BUILD_APPS "Собирать приложения из apps/"   ON)
@@ -108,3 +106,7 @@ message(STATUS "  CXX flags    ${_flags}")
 message(STATUS "  Parallel     ${YAGKP_PARALLEL}")
 message(STATUS "  Apps         ${YAGKP_BUILD_APPS}")
 message(STATUS "")
+option(YAGKP_BUILD_BENCHMARKS "Build benchmark runner" OFF)
+if(YAGKP_BUILD_BENCHMARKS)
+    add_subdirectory(benchmark)
+endif()

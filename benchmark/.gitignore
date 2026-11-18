@@ -1,0 +1,12 @@
+/build/
+/deps/
+/data/*
+!/data/graphs_manager.sh
+/results/
+__pycache__/
+compile_commands.json
+/.vscode/
+patch
+/external/mt-metis/
+/slurm/logs/*
+!/slurm/logs/.gitkeep

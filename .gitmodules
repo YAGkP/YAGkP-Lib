@@ -1,0 +1,18 @@
+[submodule "external/GKlib"]
+	path = external/GKlib
+	url = https://github.com/KarypisLab/GKlib
+[submodule "external/METIS"]
+	path = external/METIS
+	url = https://github.com/KarypisLab/METIS
+[submodule "external/KaHIP"]
+	path = external/KaHIP
+	url = https://github.com/KaHIP/KaHIP
+[submodule "external/scotch"]
+	path = external/scotch
+	url = https://github.com/live-clones/scotch
+[submodule "external/KaMinPar"]
+	path = external/KaMinPar
+	url = https://github.com/KaHIP/KaMinPar.git
+[submodule "external/oneTBB"]
+	path = external/oneTBB
+	url = https://github.com/uxlfoundation/oneTBB.git

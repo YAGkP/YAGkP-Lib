@@ -3,3 +3,8 @@
 gmon.out
 /.vscode/
 patch
+
+/external/graphs/
+/external/micromamba/
+/external/mt-metis/
+/external/.archive.*
