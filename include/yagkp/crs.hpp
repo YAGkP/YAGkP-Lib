@@ -16,6 +16,7 @@ namespace yagkp {
 	/**
 	 * @brief Stores variable-length rows in a contiguous buffer
 	 *
+	 * Offsets always start with zero, including when there are no rows.
 	 * Row i occupies values[offsets[i] .. offsets[i + 1]). An empty row has equal
 	 * start and end offsets. Values can be accessed as crs[i][j].
 	 *
@@ -34,7 +35,7 @@ namespace yagkp {
 		CRS()           = default;
 		CRS(const CRS&) = default;
 
-		CRS(CRS&& other) noexcept {
+		CRS(CRS&& other) : CRS() {
 			swap(other);
 		}
 
@@ -55,7 +56,6 @@ namespace yagkp {
 		static CRS from_row_sizes(std::span<const int_t> row_sizes) {
 			CRS result;
 			result.reserve(row_sizes.size(), 0);
-			result.offsets.push_back(0);
 
 			int_t row_end = 0;
 			for (const int_t row_size: row_sizes) {
@@ -85,10 +85,7 @@ namespace yagkp {
 		 * @brief Adds an empty row at the end
 		 */
 		void append_row() {
-			if (offsets.empty()) {
-				offsets.push_back(0);
-			}
-			offsets.push_back(values.size());
+			offsets.push_back(offsets.back());
 		}
 
 		/**
@@ -129,7 +126,7 @@ namespace yagkp {
 		 * @brief Returns the number of rows, including empty rows
 		 */
 		int_t row_count() const noexcept {
-			return offsets.empty() ? 0 : offsets.size() - 1;
+			return offsets.size() - 1;
 		}
 
 		/**
@@ -187,7 +184,7 @@ namespace yagkp {
 			values.swap(other.values);
 		}
 
-		vector<int_t> offsets;
+		vector<int_t> offsets{0};
 		vector<T> values;
 	};
 } // namespace yagkp
