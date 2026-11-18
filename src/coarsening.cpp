@@ -45,39 +45,37 @@ namespace yagkp::Coarser {
 				}
 			}
 
-			// 2. Building graph
+			// 2. Compute vertex weights and an upper bound on each coarse degree.
 
 			UndirectedGraph coarsened_graph;
 			coarsened_graph.n                   = coarse_n;
 			coarsened_graph.total_vertex_weight = graph.total_vertex_weight;
 			coarsened_graph.vertex_weights.resize(coarse_n, 0);
 
-			vector<int_t> upper_xadj(coarse_n + 1, 0);
+			vector<int_t> degree(coarse_n, 0);
 
 #pragma omp taskloop default(shared) grainsize(grain_size) if (is_parallel)
 			for (int_t c_curr_V = 0; c_curr_V < coarse_n; ++c_curr_V) {
 				for (int_t u_curr_V: coarse_to_uncoarse[c_curr_V]) {
 					coarsened_graph.vertex_weights[c_curr_V] += graph.vertex_weights[u_curr_V];
-					upper_xadj[c_curr_V + 1] += graph.neighbours[u_curr_V].size();
+					degree[c_curr_V] += graph.neighbours[u_curr_V].size();
 				}
 			}
 
-			for (int_t c_curr_V = 0; c_curr_V < coarse_n; ++c_curr_V) {
-				upper_xadj[c_curr_V + 1] += upper_xadj[c_curr_V];
-			}
-
-			// 3. Edges
-			vector<int_t> upper_adjncy(upper_xadj[coarse_n]);
-			vector<int_t> upper_edge_weights(upper_xadj[coarse_n]);
-			vector<int_t> degree(coarse_n, 0);
+			// 3. Merge edges to the same coarse neighbour within each row.
+			struct Edge {
+				int_t neighbour;
+				int_t weight;
+			};
+			auto edges = CRS<Edge>::from_row_sizes(degree);
 			vector<int_t> internal_edge_weight(coarse_n, 0);
 
 #pragma omp taskloop default(shared) grainsize(grain_size) if (is_parallel)
 			for (int_t c_curr_V = 0; c_curr_V < coarse_n; ++c_curr_V) {
 				vector<int_t>& marker = ThreadMarker(coarse_n);
 
-				const int_t begin = upper_xadj[c_curr_V];
-				int_t end         = begin;
+				auto row = edges[c_curr_V];
+				int_t used = 0;
 
 				for (int_t u_curr_V: coarse_to_uncoarse[c_curr_V]) {
 					for (auto [u_next_V, w]: graph[u_curr_V]) {
@@ -86,22 +84,21 @@ namespace yagkp::Coarser {
 							internal_edge_weight[c_curr_V] += w;
 							continue;
 						}
-						if (marker[c_next_V] == -1) {
-							marker[c_next_V]        = end;
-							upper_adjncy[end]       = c_next_V;
-							upper_edge_weights[end] = w;
-							++end;
+						int_t& slot = marker[c_next_V];
+						if (slot == -1) {
+							slot = used++;
+							row[slot] = {c_next_V, w};
 						}
 						else {
-							upper_edge_weights[marker[c_next_V]] += w;
+							row[slot].weight += w;
 						}
 					}
 				}
 
-				for (int_t pos = begin; pos < end; ++pos) {
-					marker[upper_adjncy[pos]] = -1;
+				for (const Edge& edge: row.first(used)) {
+					marker[edge.neighbour] = -1;
 				}
-				degree[c_curr_V] = end - begin;
+				degree[c_curr_V] = used;
 			}
 
 			coarsened_graph.neighbours = CRS<int_t>::from_row_sizes(degree);
@@ -115,16 +112,13 @@ namespace yagkp::Coarser {
 
 #pragma omp taskloop default(shared) grainsize(grain_size) if (is_parallel)
 			for (int_t c_curr_V = 0; c_curr_V < coarse_n; ++c_curr_V) {
-				std::copy_n(
-				    upper_adjncy.begin() + upper_xadj[c_curr_V],
-				    degree[c_curr_V],
-				    coarsened_graph.neighbours[c_curr_V].begin()
-				);
-				std::copy_n(
-				    upper_edge_weights.begin() + upper_xadj[c_curr_V],
-				    degree[c_curr_V],
-				    coarsened_graph.edge_weights.begin() + coarsened_graph.neighbours.row_offsets()[c_curr_V]
-				);
+				auto neighbours = coarsened_graph.neighbours[c_curr_V];
+				const int_t offset = coarsened_graph.neighbours.row_offsets()[c_curr_V];
+				auto row = edges[c_curr_V];
+				for (int_t i = 0; i < degree[c_curr_V]; ++i) {
+					neighbours[i] = row[i].neighbour;
+					coarsened_graph.edge_weights[offset + i] = row[i].weight;
+				}
 
 				for (int_t u_curr_V: coarse_to_uncoarse[c_curr_V]) {
 					included_ew_in_vertex[c_curr_V] += included_ew[u_curr_V];
