@@ -25,7 +25,7 @@ namespace yagkp::Coarser {
 		CoarseLevel ContractMatching(
 		    const UndirectedGraph& graph,
 		    const vector<int_t>& included_ew,
-		    const vector<int_t>& matching
+		    Matching matching
 		) {
 			const int_t n = graph.n;
 
@@ -34,49 +34,14 @@ namespace yagkp::Coarser {
 
 			// 1. Build the mappings between fine and coarse vertices.
 
-			constexpr int_t NO_PARTNER       = -1;
-			constexpr int_t UNASSIGNED_GROUP = -1;
-
-			vector<int_t> uncoarse_to_coarse(n, UNASSIGNED_GROUP);
-			CRS<int_t> coarse_to_uncoarse;
-
-			{
-				vector<int_t> row_sizes;
-				row_sizes.reserve(n);
-
-				// Assign group IDs in vertex order and compute the length of each row.
-				for (int_t vertex = 0; vertex < n; ++vertex) {
-					const int_t partner    = matching[vertex];
-					const bool has_partner = partner != NO_PARTNER && partner != vertex;
-					if (has_partner && vertex > partner) {
-						continue;
-					}
-
-					const auto group_id        = static_cast<int_t>(row_sizes.size());
-					uncoarse_to_coarse[vertex] = group_id;
-					row_sizes.push_back(has_partner ? 2 : 1);
-				}
-
-				coarse_to_uncoarse = CRS<int_t>::from_row_sizes(row_sizes);
-			}
-
+			CRS<int_t> coarse_to_uncoarse(std::move(matching));
 			const int_t coarse_n = coarse_to_uncoarse.row_count();
+			vector<int_t> uncoarse_to_coarse(n);
 
 #pragma omp taskloop default(shared) grainsize(grain_size) if (is_parallel)
-			for (int_t vertex = 0; vertex < n; ++vertex) {
-				const int_t partner    = matching[vertex];
-				const bool has_partner = (partner != NO_PARTNER);
-				if (has_partner && vertex > partner) {
-					continue;
-				}
-
-				const int_t group_id = uncoarse_to_coarse[vertex];
-				auto members         = coarse_to_uncoarse[group_id];
-				members[0]           = vertex;
-
-				if (has_partner) {
-					members[1]                  = partner;
-					uncoarse_to_coarse[partner] = group_id;
+			for (int_t group = 0; group < coarse_n; ++group) {
+				for (int_t vertex: coarse_to_uncoarse[group]) {
+					uncoarse_to_coarse[vertex] = group;
 				}
 			}
 
@@ -182,7 +147,7 @@ namespace yagkp::Coarser {
 		}
 
 		template <typename EdgeRating>
-		vector<int_t> GetGreedyMatching(
+		Matching GetGreedyMatching(
 		    const UndirectedGraph& graph,
 		    const int_t k,
 		    const EdgeRating& edge_rating
@@ -199,9 +164,8 @@ namespace yagkp::Coarser {
 				                           ProgramConfig::coarsening_clusterization_size_factor);
 			}
 
-			[[maybe_unused]] const int_t grain_size = ProgramConfig::parallel_loop_grain_size;
-			[[maybe_unused]] const bool is_parallel =
-			    n >= ProgramConfig::parallel_loop_min_vertices;
+			const int_t grain_size = ProgramConfig::parallel_loop_grain_size;
+			const bool is_parallel = (n >= ProgramConfig::parallel_loop_min_vertices);
 
 #pragma omp taskloop default(none) shared(graph, edge_rating, permutation, matching)               \
     firstprivate(n, max_allowed_size) grainsize(grain_size) if (is_parallel)
@@ -240,31 +204,37 @@ namespace yagkp::Coarser {
 				}
 			}
 
-#pragma omp taskloop default(none) shared(matching) firstprivate(n)                                \
-    grainsize(grain_size) if (is_parallel)
-			for (int_t curr_V = 0; curr_V < n; ++curr_V) {
-				const int_t next_V = parallel::RelaxedLoad(matching[curr_V]);
-				if (next_V != -1 && parallel::RelaxedLoad(matching[next_V]) != curr_V) {
-					parallel::RelaxedStore(matching[curr_V], int_t(-1));
+			// Reuse the permutation buffer now that the parallel tasks have finished.
+			Matching result{std::move(permutation)};
+			int_t unmatched_begin = n;
+			for (int_t vertex = 0; vertex < n; ++vertex) {
+				const int_t partner = matching[vertex];
+				if (partner == -1) {
+					result.vertices[--unmatched_begin] = vertex;
+				}
+				else if (vertex < partner && matching[partner] == vertex) {
+					const int_t begin          = 2 * result.pair_count;
+					result.vertices[begin]     = vertex;
+					result.vertices[begin + 1] = partner;
+					++result.pair_count;
 				}
 			}
-
-			return matching;
+			return result;
 		}
 
-		vector<int_t> RandomMatching(const UndirectedGraph& graph, const int_t k) {
+		Matching RandomMatching(const UndirectedGraph& graph, const int_t k) {
 			return GetGreedyMatching(graph, k, [](int_t, int_t, int_t) { return 0; });
 		}
 
-		vector<int_t> LightEdgeMatching(const UndirectedGraph& graph, const int_t k) {
+		Matching LightEdgeMatching(const UndirectedGraph& graph, const int_t k) {
 			return GetGreedyMatching(graph, k, [](int_t, int_t, int_t w) { return -w; });
 		}
 
-		vector<int_t> HeavyEdgeMatching(const UndirectedGraph& graph, const int_t k) {
+		Matching HeavyEdgeMatching(const UndirectedGraph& graph, const int_t k) {
 			return GetGreedyMatching(graph, k, [](int_t, int_t, int_t w) { return w; });
 		}
 
-		vector<int_t> HeavyCliqueMatching(
+		Matching HeavyCliqueMatching(
 		    const UndirectedGraph& graph,
 		    const vector<int_t>& included_ew,
 		    const int_t k
@@ -283,7 +253,7 @@ namespace yagkp::Coarser {
 			return GetGreedyMatching(graph, k, clique_density);
 		}
 
-		vector<int_t> GetMatching(
+		Matching GetMatching(
 		    const UndirectedGraph& graph,
 		    const vector<int_t>& included_ew,
 		    const int_t k

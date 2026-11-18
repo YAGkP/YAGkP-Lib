@@ -35,6 +35,26 @@ namespace yagkp {
 		CRS()           = default;
 		CRS(const CRS&) = default;
 
+		/**
+		 * @brief Takes the vertex buffer and builds a row for each pair or singleton
+		 */
+		explicit CRS(Matching matching)
+		    requires std::is_same_v<T, int_t>
+		    : values(std::move(matching.vertices)) {
+			const int_t n     = value_count();
+			const int_t pairs = matching.pair_count;
+
+			YAGKP_ASSERT(pairs >= 0 && pairs <= n / 2, "Invalid matching pair count");
+			
+			offsets.reserve(n - pairs + 1);
+			for (int_t pair = 0; pair < pairs; ++pair) {
+				offsets.push_back(offsets.back() + 2);
+			}
+			for (int_t vertex = 2 * pairs; vertex < n; ++vertex) {
+				offsets.push_back(vertex + 1);
+			}
+		}
+
 		CRS(CRS&& other) : CRS() {
 			swap(other);
 		}

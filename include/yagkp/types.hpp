@@ -34,6 +34,18 @@ namespace yagkp {
 	using std::string;
 	using std::vector;
 
+	/**
+	 * @brief Stores every fine vertex exactly once, with matched pairs first
+	 *
+	 * Pair i occupies vertices[2*i] and vertices[2*i + 1].
+	 * Starting at 2*pair_count, each vertex forms its own group.
+	 */
+	struct Matching {
+		vector<int_t> vertices;
+		int_t pair_count = 0;
+	};
+
+
 	template <typename T> void setmax(T& a, T b) {
 		if (b > a) {
 			a = b;
