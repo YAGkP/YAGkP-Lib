@@ -29,31 +29,54 @@ namespace yagkp::Coarser {
 		) {
 			const int_t n = graph.n;
 
-			[[maybe_unused]] const int_t grain_size = ProgramConfig::parallel_loop_grain_size;
-			[[maybe_unused]] const bool is_parallel =
-			    n >= ProgramConfig::parallel_loop_min_vertices;
+			const int_t grain_size = ProgramConfig::parallel_loop_grain_size;
+			const bool is_parallel = (n >= ProgramConfig::parallel_loop_min_vertices);
 
-			// 1. Filling coarse vectors
+			// 1. Build the mappings between fine and coarse vertices.
 
-			vector<int_t> uncoarse_to_coarse(n, -1);
-			int_t coarse_n = 0;
-			for (int_t curr_V = 0; curr_V < n; ++curr_V) {
-				if (matching[curr_V] == -1 || curr_V < matching[curr_V]) {
-					uncoarse_to_coarse[curr_V] = coarse_n++;
+			constexpr int_t NO_PARTNER       = -1;
+			constexpr int_t UNASSIGNED_GROUP = -1;
+
+			vector<int_t> uncoarse_to_coarse(n, UNASSIGNED_GROUP);
+			CRS<int_t> coarse_to_uncoarse;
+
+			{
+				vector<int_t> row_sizes;
+				row_sizes.reserve(n);
+
+				// Assign group IDs in vertex order and compute the length of each row.
+				for (int_t vertex = 0; vertex < n; ++vertex) {
+					const int_t partner    = matching[vertex];
+					const bool has_partner = partner != NO_PARTNER && partner != vertex;
+					if (has_partner && vertex > partner) {
+						continue;
+					}
+
+					const auto group_id        = static_cast<int_t>(row_sizes.size());
+					uncoarse_to_coarse[vertex] = group_id;
+					row_sizes.push_back(has_partner ? 2 : 1);
 				}
+
+				coarse_to_uncoarse = CRS<int_t>::from_row_sizes(row_sizes);
 			}
 
-			vector<vector<int_t>> coarse_to_uncoarse(coarse_n);
+			const int_t coarse_n = coarse_to_uncoarse.row_count();
+
 #pragma omp taskloop default(shared) grainsize(grain_size) if (is_parallel)
-			for (int_t curr_V = 0; curr_V < n; ++curr_V) {
-				const int_t next_V = matching[curr_V];
-				if (next_V == -1) {
-					coarse_to_uncoarse[uncoarse_to_coarse[curr_V]] = {curr_V};
+			for (int_t vertex = 0; vertex < n; ++vertex) {
+				const int_t partner    = matching[vertex];
+				const bool has_partner = (partner != NO_PARTNER);
+				if (has_partner && vertex > partner) {
+					continue;
 				}
-				else if (curr_V < next_V) {
-					const int_t c_curr_V         = uncoarse_to_coarse[curr_V];
-					uncoarse_to_coarse[next_V]   = c_curr_V;
-					coarse_to_uncoarse[c_curr_V] = {curr_V, next_V};
+
+				const int_t group_id = uncoarse_to_coarse[vertex];
+				auto members         = coarse_to_uncoarse[group_id];
+				members[0]           = vertex;
+
+				if (has_partner) {
+					members[1]                  = partner;
+					uncoarse_to_coarse[partner] = group_id;
 				}
 			}
 
@@ -192,11 +215,16 @@ namespace yagkp::Coarser {
 				bool found = false;
 
 				for (auto [next_V, w]: graph[curr_V]) {
+					if (next_V == curr_V) {
+						continue;
+					}
 					if (graph.vertex_weights[curr_V] + graph.vertex_weights[next_V] >
-					    max_allowed_size)
+					    max_allowed_size) {
 						continue;
-					if (parallel::RelaxedLoad(matching[next_V]) != -1)
+					}
+					if (parallel::RelaxedLoad(matching[next_V]) != -1) {
 						continue;
+					}
 
 					fp_t rating = edge_rating(curr_V, next_V, w);
 					if (!found || rating > best_rating) {

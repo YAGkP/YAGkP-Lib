@@ -75,7 +75,10 @@ namespace yagkp {
 		 * @param expected_values total number of elements across all rows
 		 */
 		void reserve(const int_t expected_rows, const int_t expected_values) {
-			YAGKP_ASSERT(expected_rows < offsets.max_size(), "CRS row count exceeds max_size");
+			YAGKP_ASSERT(
+			    expected_rows >= 0 && expected_values >= 0,
+			    "expected values in CRS should be non negative"
+			);
 
 			offsets.reserve(expected_rows + 1);
 			values.reserve(expected_values);
