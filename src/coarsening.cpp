@@ -209,10 +209,10 @@ namespace yagkp::Coarser {
 			int_t unmatched_begin = n;
 			for (int_t vertex = 0; vertex < n; ++vertex) {
 				const int_t partner = matching[vertex];
-				if (partner == -1) {
+				if (partner == -1 || matching[partner] != vertex) {
 					result.vertices[--unmatched_begin] = vertex;
 				}
-				else if (vertex < partner && matching[partner] == vertex) {
+				else if (vertex < partner) {
 					const int_t begin          = 2 * result.pair_count;
 					result.vertices[begin]     = vertex;
 					result.vertices[begin + 1] = partner;
